@@ -12,6 +12,12 @@
   <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white">
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/github/languages/top/Mikezx8/RAT">
+  <img src="https://img.shields.io/github/languages/count/Mikezx8/RAT">
+  <img src="https://img.shields.io/github/languages/code-size/Mikezx8/RAT">
+</p>
+
 ---
 
 A penetration testing framework I built over 2 months. Fully modular payload system like Metasploit. Can build payloads for Windows, Linux and Android. Supports ws, wss, http, https, tcp protocols. More payloads coming in the future.
@@ -31,29 +37,6 @@ The payload system works in stages:
 - **Payload** - Full agent with post-exploitation functionality
 
 This keeps the initial footprint small while allowing complex functionality.
-
-## Language Detection API
-
-The framework includes a language detection API that can identify text language with confidence scoring .
-
-**Features:**
-- Detects over 100 languages 
-- Returns ISO 639-1 language codes 
-- Confidence scores from 0-1 
-- Handles multilingual content 
-
-**Example Response:**
-```json
-{
-  "detectedLanguage": {
-    "confidenceScore": 0.98,
-    "iso6391Name": "en",
-    "name": "English"
-  }
-}
-```
-
-For mixed language input, returns the predominant language with adjusted confidence .
 
 ## Screenshots
 
