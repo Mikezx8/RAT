@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://phongthuybta.com/wp-content/uploads/2025/12/rat-1.webp" width="120" style="border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+  <img src="https://phongthuybta.com/wp-content/uploads/2025/12/rat-1.webp" width="160" style="border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
 </p>
 
 <h1 align="center" style="font-size: 3em; font-weight: bold; letter-spacing: 2px; margin-top: 5px; color: #2c3e50;">RAT</h1>
@@ -31,6 +31,29 @@ The payload system works in stages:
 - **Payload** - Full agent with post-exploitation functionality
 
 This keeps the initial footprint small while allowing complex functionality.
+
+## Language Detection API
+
+The framework includes a language detection API that can identify text language with confidence scoring .
+
+**Features:**
+- Detects over 100 languages 
+- Returns ISO 639-1 language codes 
+- Confidence scores from 0-1 
+- Handles multilingual content 
+
+**Example Response:**
+```json
+{
+  "detectedLanguage": {
+    "confidenceScore": 0.98,
+    "iso6391Name": "en",
+    "name": "English"
+  }
+}
+```
+
+For mixed language input, returns the predominant language with adjusted confidence .
 
 ## Screenshots
 
