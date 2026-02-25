@@ -424,9 +424,6 @@ g++ main.cpp -o discord_client \
     -lportaudio -lsndfile \
     -lX11 -lXrandr -lXext
 
-python3 injector.py discord_client "MTQ3NDA5NjMzMDAxOTE4MDY2NA.GIp7sC.43Ntvva7xMaAaQwRJb2PMcI6jfMiGngRqoQHwA" 1386805982583328852
-./discord_client_injected
-
 x86_64-w64-mingw32-g++ main.cpp -o discord_client.exe \
     -std=c++17 \
     -static -static-libgcc -static-libstdc++ \
@@ -464,9 +461,6 @@ x86_64-w64-mingw32-g++ main.cpp -o discord_client.exe \
     -lgdi32 -luser32 -lshell32 -lcomdlg32 -lcrypt32 \
     -lsetupapi -ladvapi32 -lwtsapi32 -luserenv \
     -liphlpapi -lwinhttp -lstrmiids -lvfw32 -lmfplat -lmfuuid
-
-python3 injector.py discord_client.exe "MTQ3NDA5NjMzMDAxOTE4MDY2NA.GIp7sC.43Ntvva7xMaAaQwRJb2PMcI6jfMiGngRqoQHwA" 1386805982583328852
-mv discord_client.exe_injected discord_client_injected.exe
 
 x86_64-w64-mingw32-g++ main.cpp -o discord_client.exe \
     -std=c++17 \
