@@ -1,8 +1,18 @@
 <p align="center">
-  <img src="https://phongthuybta.com/wp-content/uploads/2025/12/rat-1.webp" width="150">
+  <img src="https://phongthuybta.com/wp-content/uploads/2025/12/rat-1.webp" width="120" style="border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
 </p>
 
-<h1 align="center">RAT - Remote Administration Tool</h1>
+<h1 align="center" style="font-size: 3em; font-weight: bold; letter-spacing: 2px; margin-top: 5px; color: #2c3e50;">RAT</h1>
+<h3 align="center" style="font-weight: normal; color: #7f8c8d; margin-top: -10px;">Remote Administration Tool</h3>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white">
+  <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black">
+  <img src="https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white">
+</p>
+
+---
 
 A penetration testing framework I built over 2 months. Fully modular payload system like Metasploit. Can build payloads for Windows, Linux and Android. Supports ws, wss, http, https, tcp protocols. More payloads coming in the future.
 
@@ -24,23 +34,14 @@ This keeps the initial footprint small while allowing complex functionality.
 
 ## Screenshots
 
-**Main Menu**
-![Main Menu](images/Screenshot_2026-02-25_08-13-59.png)
-
-**Windows Payload Build**
-![Windows Build](images/Screenshot_2026-02-25_09-03-06.png)
-
-**Android APK Build**
-![Android Build](images/Screenshot_2026-02-25_09-04-29.png)
-
-**Listener Management**
-![Listeners](images/Screenshot_2026-02-25_09-10-22.png)
-
-**Active Sessions**
-![Sessions](images/Screenshot_2026-02-25_09-11-15.png)
-
-**Build Guide**
-![Build Guide](images/Screenshot_2026-02-25_09-15-29.png)
+| | |
+|---|---|
+| **Main Menu** | **Windows Build** |
+| ![Main Menu](images/Screenshot_2026-02-25_08-13-59.png) | ![Windows Build](images/Screenshot_2026-02-25_09-03-06.png) |
+| **Android Build** | **Listeners** |
+| ![Android Build](images/Screenshot_2026-02-25_09-04-29.png) | ![Listeners](images/Screenshot_2026-02-25_09-10-22.png) |
+| **Active Sessions** | **Build Guide** |
+| ![Sessions](images/Screenshot_2026-02-25_09-11-15.png) | ![Build Guide](images/Screenshot_2026-02-25_09-15-29.png) |
 
 ## Installation
 
@@ -83,11 +84,11 @@ chmod +x setup.sh
 
 ## Supported Protocols
 
-- ws (WebSocket)
-- wss (Secure WebSocket)
-- http
-- https
-- tcp
+- `ws` - WebSocket
+- `wss` - Secure WebSocket
+- `http` - HTTP
+- `https` - HTTPS
+- `tcp` - Raw TCP
 
 ## Roadmap
 
@@ -102,4 +103,6 @@ This tool is for authorized security testing and educational purposes only. Unau
 
 ---
 
-**More features coming soon.**
+<p align="center">
+  More features coming soon.
+</p>
