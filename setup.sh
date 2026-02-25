@@ -11,6 +11,33 @@ DESKTOP_FILE="$HOME/.local/share/applications/$APP_NAME.desktop"
 
 JAVA_COMMAND="java -version"
 
+echo ""
+echo "=============================================="
+echo -e "\033[1;31m !!! WARNING !!! \033[0m"
+echo ""
+echo -e "\033[1;33m This installation may use up to 1GB of data and storage.\033[0m"
+echo -e "\033[1;33m Please make sure you have enough free space and data allowance.\033[0m"
+echo "=============================================="
+echo ""
+
+while true; do
+    read -p "Do you want to continue? (yes/no): " choice
+
+    case "$choice" in
+        yes|Yes|YES )
+            echo "Proceeding with installation..."
+            break
+            ;;
+        no|No|NO )
+            echo "Installation cancelled."
+            exit 1
+            ;;
+        * )
+            echo "Please type yes or no."
+            ;;
+    esac
+done
+
 # Check if Java is installed and version is 17
 if command -v java >/dev/null 2>&1; then
   JAVA_VER=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}' | cut -d. -f1)
