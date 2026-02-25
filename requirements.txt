@@ -1,0 +1,14 @@
+Flask
+Pillow
+selenium
+requests
+pygame
+numpy
+pyaudio
+websockets
+PyQt5
+opencv-python
+gunicorn
+geckodriver-autoinstaller
+chromedriver-autoinstaller
+

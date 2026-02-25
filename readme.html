@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mashmod Framework - Documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0e14;
+            color: #b3b9c5;
+            line-height: 1.7;
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: #13171d;
+            border-right: 1px solid #1f2937;
+            padding: 30px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            left: 0;
+            top: 0;
+        }
+        
+        .sidebar-header {
+            padding: 0 25px 20px 25px;
+            border-bottom: 1px solid #1f2937;
+            margin-bottom: 20px;
+        }
+        
+        .sidebar-header h1 {
+            color: #e6e8eb;
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .sidebar-header .version {
+            color: #6b7280;
+            font-size: 0.85em;
+        }
+        
+        .nav-menu {
+            list-style: none;
+        }
+        
+        .nav-menu li {
+            margin: 0;
+        }
+        
+        .nav-menu a {
+            display: block;
+            padding: 12px 25px;
+            color: #9ca3af;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-menu a:hover {
+            background: #1a1f26;
+            color: #dc2626;
+            border-left-color: #dc2626;
+        }
+        
+        .nav-menu a.active {
+            background: #1a1f26;
+            color: #dc2626;
+            border-left-color: #dc2626;
+            font-weight: 500;
+        }
+        
+        .submenu {
+            display: none;
+            list-style: none;
+            background: #0f1419;
+            padding-left: 30px;
+        }
+        
+        .submenu.active {
+            display: block;
+        }
+        
+        .submenu a {
+            padding: 10px 25px;
+            font-size: 0.9em;
+        }
+        
+        .has-submenu > a::after {
+            content: " ▼";
+            font-size: 0.8em;
+            float: right;
+        }
+        
+        .content {
+            margin-left: 280px;
+            padding: 40px 60px;
+            flex: 1;
+            max-width: 1200px;
+        }
+        
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        h2 {
+            color: #e6e8eb;
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        h3 {
+            color: #d1d5db;
+            font-size: 1.6em;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        h4 {
+            color: #b3b9c5;
+            font-size: 1.2em;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        p {
+            margin-bottom: 16px;
+            color: #9ca3af;
+            font-size: 1.05em;
+        }
+        
+        .subtitle {
+            color: #6b7280;
+            font-size: 1.15em;
+            margin-bottom: 35px;
+        }
+        
+        ul {
+            margin: 15px 0 20px 25px;
+            list-style: none;
+        }
+        
+        li {
+            margin-bottom: 10px;
+            color: #9ca3af;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        li:before {
+            content: "▸";
+            color: #dc2626;
+            position: absolute;
+            left: 0;
+        }
+        
+        li strong {
+            color: #d1d5db;
+        }
+
+        .doc-image {
+            width: 1000px;
+            height: auto;
+            cursor: pointer;
+            margin: 20px 0;
+            border-radius: 6px;
+            border: 1px solid #1f2937;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            max-width: 100%;
+        }
+        
+        .doc-image:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .image-container {
+            text-align: center;
+            margin: 25px 0;
+        }
+        
+        .image-caption {
+            color: #6b7280;
+            font-size: 0.9em;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        code {
+            background: #1a1f26;
+            color: #dc2626;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.92em;
+            border: 1px solid #1f2937;
+        }
+        
+        pre {
+            background: #13171d;
+            border: 1px solid #1f2937;
+            border-radius: 6px;
+            padding: 20px;
+            overflow-x: auto;
+            margin: 20px 0;
+            border-left: 3px solid #dc2626;
+            position: relative;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            color: #b3b9c5;
+            font-size: 0.9em;
+            border: none;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #1a1f26;
+            color: #9ca3af;
+            border: 1px solid #1f2937;
+            border-radius: 4px;
+            padding: 5px 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s ease;
+        }
+        
+        .copy-button:hover {
+            background: #dc2626;
+            color: #0a0e14;
+        }
+        
+        .copy-button.copied {
+            background: #10b981;
+            color: #fff;
+        }
+        
+        .info-box {
+            background: #1a1f26;
+            border-left: 4px solid #dc2626;
+            padding: 18px 20px;
+            margin: 25px 0;
+            border-radius: 4px;
+        }
+        
+        .info-box-title {
+            color: #dc2626;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1.05em;
+        }
+        
+        .info-box p {
+            margin-bottom: 0;
+            color: #9ca3af;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
+        
+        .feature-card {
+            background: #13171d;
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid #1f2937;
+            transition: border-color 0.2s ease;
+        }
+        
+        .feature-card:hover {
+            border-color: #dc2626;
+        }
+        
+        .feature-card h4 {
+            color: #dc2626;
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .feature-card p {
+            margin-bottom: 0;
+            font-size: 0.95em;
+        }
+        
+        .step-container {
+            margin: 25px 0;
+        }
+        
+        .step {
+            background: #13171d;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 6px;
+            border-left: 3px solid #dc2626;
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: #dc2626;
+            color: #0a0e14;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: 700;
+            margin-right: 12px;
+            font-size: 0.95em;
+        }
+        
+        .step-title {
+            color: #d1d5db;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            background: #13171d;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        th {
+            background: #1a1f26;
+            color: #dc2626;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #1f2937;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #1f2937;
+            color: #9ca3af;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        hr {
+            border: none;
+            border-top: 1px solid #1f2937;
+            margin: 40px 0;
+        }
+        
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0a0e14;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 5px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #374151;
+        }
+        
+        /* Lightbox styles */
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .lightbox-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+            margin-top: 40px;
+            border-radius: 6px;
+        }
+        
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .lightbox-close:hover,
+        .lightbox-close:focus {
+            color: #dc2626;
+            text-decoration: none;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Submenu section styling */
+        .submenu-section {
+            text-align: center;
+            padding: 40px 0;
+        }
+        
+        .submenu-section h2 {
+            margin-bottom: 30px;
+        }
+        
+        .submenu-section .doc-image {
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h1>MASHMOD</h1>
+            <div class="version">Penetration Testing Framework</div>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="#introduction" class="nav-link active" onclick="showSection('introduction')">Introduction</a></li>
+            <li><a href="#features" class="nav-link" onclick="showSection('features')">Features</a></li>
+            <li><a href="#requirements" class="nav-link" onclick="showSection('requirements')">System Requirements</a></li>
+            <li class="has-submenu">
+                <a href="#" class="nav-link" onclick="toggleSubmenu(event, 'setup-submenu')">Setup & Installation</a>
+                <ul id="setup-submenu" class="submenu">
+                    <li><a href="#setup" class="nav-link" onclick="showSection('setup')">Installation Guide</a></li>
+                    <li><a href="#setup-script" class="nav-link" onclick="showSection('setup-script')">Setup Script Reference</a></li>
+                </ul>
+            </li>
+            <li><a href="#usage" class="nav-link" onclick="showSection('usage')">Usage Guide</a></li>
+            <li class="has-submenu">
+                <a href="#" class="nav-link" onclick="toggleSubmenu(event, 'building-submenu')">Building Payloads</a>
+                <ul id="building-submenu" class="submenu">
+                    <li><a href="#building" class="nav-link" onclick="showSection('building')">Desktop Payloads</a></li>
+                    <li><a href="#android-building" class="nav-link" onclick="showSection('android-building')">Android Payloads</a></li>
+                </ul>
+            </li>
+            <li><a href="#twostepserver" class="nav-link" onclick="showSection('twostepserver')">Update Notes</a></li>
+            <li><a href="#wireless" class="nav-link" onclick="showSection('wireless')">Wireless Reconnaissance</a></li>
+            <li><a href="#troubleshooting" class="nav-link" onclick="showSection('troubleshooting')">Troubleshooting</a></li>
+        </ul>
+    </nav>
+
+    <main class="content">
+        <!-- INTRODUCTION SECTION -->
+        <section id="introduction" class="section active">
+            <h2>Introduction</h2>
+            <p class="subtitle">Advanced Penetration Testing & Payload Generation Tool</p>
+            
+            <p>
+                Mashmod is a comprehensive penetration testing framework designed for security professionals and researchers conducting authorized security assessments. It provides a powerful suite of tools for crafting custom payloads, conducting reconnaissance, and testing security controls across multiple platforms and protocols.
+            </p>
+            
+            <p>
+                Built with flexibility and extensibility in mind, Mashmod supports payload generation for both desktop and mobile environments, with specialized modules for wireless protocol testing including Bluetooth and WiFi reconnaissance capabilities. The framework leverages cross-platform compilation to generate executable payloads for Windows and Linux from a single development environment.
+            </p>
+            
+            <p>
+                The modular architecture allows security researchers to quickly prototype and deploy custom testing scenarios while maintaining a consistent workflow across different target platforms and architectures.
+            </p>
+            
+            <div class="image-container">
+                <img id="myImage" class="doc-image" src="mash.png" alt="Mashmod Framework Interface">
+                <div class="image-caption">Mashmod Framework Main Interface</div>
+            </div>
+            
+            <div class="image-container">
+                <img class="doc-image" src="mash7.png" alt="Payload Generation Workflow">
+                <div class="image-caption">Payload Generation Workflow Diagram</div>
+            </div>
+        </section>
+
+        <!-- FEATURES SECTION -->
+        <section id="features" class="section">
+            <h2>Features</h2>
+            <p class="subtitle">Comprehensive toolset for modern penetration testing</p>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h4>Desktop Payloads</h4>
+                    <p>Generate custom payloads for Linux and Windows systems with full cross-compilation support using MinGW toolchain</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Android Support</h4>
+                    <p>Full compatibility with Android versions up to Android 16 with automated APK generation and signing</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Bluetooth Reconnaissance</h4>
+                    <p>Comprehensive Bluetooth scanning and device enumeration capabilities for wireless assessments</p>
+                </div>
+                <div class="feature-card">
+                    <h4>WiFi Analysis</h4>
+                    <p>Advanced WiFi reconnaissance and network analysis utilities for wireless security testing</p>
+                </div>
+                <div class="feature-card">
+                    <h4>File Format Payloads</h4>
+                    <p>Create payloads embedded in various file formats for social engineering and delivery mechanisms</p>
+                </div>
+                <div class="feature-card">
+                    <h4>Cross-Platform Build</h4>
+                    <p>Build Windows PE executables from Linux using MinGW with full library support including OpenSSL</p>
+                </div>
+            </div>
+            
+            <h3>Platform Support</h3>
+            <ul>
+                <li>Linux native payload generation (x86_64)</li>
+                <li>Windows cross-compilation (PE32/PE32+)</li>
+                <li>Android APK generation (API 21 - API 35/Android 16)</li>
+                <li>Multi-architecture support for ARM and x86 Android devices</li>
+            </ul>
+            
+        </section>
+
+        <!-- REQUIREMENTS SECTION -->
+        <section id="requirements" class="section">
+            <h2>System Requirements</h2>
+            <p class="subtitle">Minimum specifications for running Mashmod</p>
+            
+            <h3>Hardware Requirements</h3>
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>Minimum</th>
+                    <th>Recommended</th>
+                </tr>
+                <tr>
+                    <td>RAM</td>
+                    <td>4GB</td>
+                    <td>8GB or higher</td>
+                </tr>
+                <tr>
+                    <td>Disk Space</td>
+                    <td>2GB free</td>
+                    <td>5GB free</td>
+                </tr>
+                <tr>
+                    <td>Processor</td>
+                    <td>Dual-core x86_64</td>
+                    <td>Quad-core or higher</td>
+                </tr>
+            </table>
+            
+            <h3>Software Requirements</h3>
+            <ul>
+                <li>Operating System: Linux (Ubuntu 20.04+, Debian 11+, or equivalent)</li>
+                <li>Shell: Bash or Zsh</li>
+                <li>Internet Connection: Required for initial setup and dependency downloads</li>
+                <li>User Privileges: Root/sudo access required for installation</li>
+                <li>Package Manager: apt (Debian/Ubuntu based systems)</li>
+            </ul>
+            
+            <div class="info-box">
+                <div class="info-box-title">Note</div>
+                <p>The setup process will automatically install all required dependencies including JDK 17, Android SDK, Gradle, compilation toolchains, and necessary libraries.</p>
+            </div>
+            
+            <div class="image-container">
+                <img class="doc-image" src="mash5.png" alt="System Architecture Diagram">
+                <div class="image-caption">System Architecture Diagram</div>
+            </div>
+        </section>
+
+        <!-- SETUP SUBMENU SECTION -->
+        <section id="setup-submenu-section" class="section submenu-section">
+            <h2>Setup & Installation</h2>
+            <div class="image-container">
+                <img class="doc-image" src="https://via.placeholder.com/1000x600/13171d/dc2626?text=Setup+and+Installation" alt="Setup and Installation">
+                <div class="image-caption">Setup & Installation Options</div>
+            </div>
+        </section>
+
+        <!-- SETUP SECTION -->
+        <section id="setup" class="section">
+            <h2>Installation Guide</h2>
+            <p class="subtitle">Initial configuration and dependency installation</p>
+            
+            <p>
+                Before using Mashmod, you must run the automated setup script to install all required dependencies. The script handles the installation and configuration of Java Development Kit 17, Android SDK and command-line tools, Gradle build system, native compilation tools, MinGW cross-compiler for Windows targets, and OpenSSL libraries for both Linux and Windows.
+            </p>
+            
+            <h3>Installation Steps</h3>
+            
+            <div class="step-container">
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <div class="step-title">Make the setup script executable</div>
+                    <pre><code>chmod +x java_setup.sh</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <div class="step-title">Execute the setup script with elevated privileges</div>
+                    <pre><code>sudo ./java_setup.sh</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <div class="step-title">Wait for installation to complete</div>
+                    <p>The script will automatically download and configure all dependencies. This process typically takes 10-20 minutes depending on your internet connection speed and system performance.</p>
+                </div>
+                
+                <div class="step">
+                    <span class="step-number">4</span>
+                    <div class="step-title">Reload shell configuration</div>
+                    <pre><code>source ~/.zshrc
+# or for bash users:
+source ~/.bashrc</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+                </div>
+            </div>
+            
+            <h3>Setup Script Operations</h3>
+            <p>The setup script performs the following operations in sequence:</p>
+            
+            <ul>
+                <li>Verifies existing Java installation and version compatibility</li>
+                <li>Downloads and installs OpenLogic OpenJDK 17 if needed</li>
+                <li>Configures Java alternatives to set JDK 17 as default</li>
+                <li>Installs Gradle build automation tool</li>
+                <li>Configures Gradle wrapper with version 8.11.1 for Android builds</li>
+                <li>Downloads and extracts Android command-line tools</li>
+                <li>Configures Android SDK environment variables</li>
+                <li>Accepts all required Android SDK licenses</li>
+                <li>Updates project configuration with correct SDK paths</li>
+                <li>Installs native compilation libraries (pthread, X11, Xtst)</li>
+                <li>Installs MinGW-w64 cross-compiler toolchain</li>
+                <li>Downloads and compiles OpenSSL for MinGW targets</li>
+                <li>Performs initial Gradle build of Android components</li>
+            </ul>
+            
+            <div class="image-container">
+                <img class="doc-image" src="mash4.png" alt="Setup Process Flow">
+                <div class="image-caption">Setup Process Flow Diagram</div>
+            </div>
+        </section>
+
+        <!-- SETUP SCRIPT SECTION -->
+        <section id="setup-script" class="section">
+            <h2>Setup Script Reference</h2>
+            <p class="subtitle">Complete setup script contents and explanation</p>
+            
+            <p>The complete setup script contents:</p>
+            
+            <pre><code>#!/bin/bash
+set -e
+JAVA_COMMAND= java -version
+# Check if Java is installed and version is 17
+if command -v java >/dev/null 2>&1; then
+JAVA_VER=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}' | cut -d. -f1)
+if [ "$JAVA_VER" = "17" ]; then
+echo "JDK 17 already installed."
+java -version
+exit 0
+fi
+fi
+echo "Installing OpenLogic OpenJDK 17..."
+#update package list and install JDK17
+sudo apt update
+wget https://builds.openlogic.com/downloadJDK/openlogic-openjdk/17.0.16+8/openlogic-openjdk-17.0.16+8-linux-x64-deb.deb
+sudo apt install ./openlogic-openjdk-17.0.16+8-linux-x64-deb.deb
+sudo update-alternatives --install /usr/bin/java java /usr/lib/jvm/openlogic-openjdk-17-hotspot-amd64/bin/java 1
+sudo update-alternatives --install /usr/bin/javac javac /usr/lib/jvm/openlogic-openjdk-17-hotspot-amd64/bin/javac 1
+# Set OpenLogic JDK 17 as the default
+sudo update-alternatives --set java /usr/lib/jvm/openlogic-openjdk-17-hotspot-amd64/bin/java
+sudo update-alternatives --set javac /usr/lib/jvm/openlogic-openjdk-17-hotspot-amd64/bin/javac
+#check to verify java setup
+java -version
+javac -version
+#GRADLE INSTALLATION SEETUP
+sudo apt install gradle
+gradle -v
+cd android16
+gradle wrapper --gradle-version 8.11.1
+chmod +x gradlew
+cd
+mkdir -p ~/Android/Sdk
+wget https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
+unzip commandlinetools-linux-13114758_latest.zip -d ~/Android/Sdk/
+mkdir -p ~/Android/Sdk/cmdline-tools/latest
+mv ~/Android/Sdk/cmdline-tools/* ~/Android/Sdk/cmdline-tools/latest/
+echo 'export ANDROID_HOME=$HOME/Android/Sdk' >> ~/.zshrc
+echo 'export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools' >> ~/.zshrc
+source ~/.zshrc
+echo "Accept all Android Licenses"
+yes | sdkmanager --licenses
+cd MASHMOD/android16
+sed -i "s|/home/[^/]*/Android/Sdk|/home/$(whoami)/Android/Sdk|" local.properties
+./gradlew clean
+./gradlew build
+#C setup and installation
+sudo apt-get install libpthread-stubs0-dev libx11-dev libxtst-dev
+sudo apt-get install mingw-w64 gcc-mingw-w64 g++-mingw-w64
+x86_64-w64-mingw32-gcc --version
+exit
+#build command for linux
+gcc THEHITMAN/pentool.c -o pentool -lpthread -lX11 -lXtst -I/usr/include/X11
+#build command for windows on liinux
+x86_64-w64-mingw32-gcc THEHITMAN/pentoolwin32.c -o pentool.exe -lws2_32 -liphlpapi -lgdi32 -lpthread -mwindows
+#openssl for mingw
+# Download precompiled OpenSSL for mingw-w64
+wget https://github.com/openssl/openssl/releases/download/openssl-3.0.7/openssl-3.0.7.tar.gz
+tar -xzf openssl-3.0.7.tar.gz
+cd openssl-3.0.7
+# Configure for mingw-w64
+./Configure mingw64 --cross-compile-prefix=x86_64-w64-mingw32- --prefix=/usr/x86_64-w64-mingw32
+make
+sudo make install</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            
+            <div class="info-box">
+                <div class="info-box-title">Important</div>
+                <p>If you are using bash instead of zsh, you will need to manually add the Android SDK environment variables to your ~/.bashrc file instead of ~/.zshrc.</p>
+            </div>
+            
+            <div class="image-container">
+                <img class="doc-image" src="mash2.png" alt="Setup Script Execution">
+                <div class="image-caption">Setup Script Execution Process</div>
+            </div>
+        </section>
+
+<!-- USAGE SECTION -->
+<section id="usage" class="section">
+    <h2>Usage Guide</h2>
+    <p class="subtitle">Getting started with MASHMOD</p>
+    
+    <p>
+        After completing the setup process, you can start using MASHMOD by running the <code>MASH</code> command in your terminal. This will open the interactive mode where you can build payloads through a guided interface.
+    </p>
+    
+    <h3>MASH Command Line Interface</h3>
+    <p>
+        The MASH command provides a powerful interface for building various types of payloads with multiple configuration options. You can use it in interactive mode or with command-line flags for faster operation.
+    </p>
+    
+    <pre><code>MASH BUILDER v1.0 - Command Line Interface
+
+Usage: MASH [options]
+
+Global Options:
+  -h, --help              Show this help message and exit
+  -c, --credits           Show credits and exit
+  -d, --debug             Enable debug mode
+
+Payload Type Options:
+  -b, --bull              Build BULL-DozzeR payload
+  -p, --pc                Build PC payload
+  -a, --android           Build Android payload
+  -x, --cross             Build cross-platform payload
+  -o, --doc               Build document payload
+
+BULL-DozzeR Options:
+  -t, --type TYPE         Payload type: annoying, wipe, forkbomb, silentwipe, bsod
+  -w, --windows           Build for Windows
+  -l, --linux             Build for Linux
+  -n, --name NAME         Output filename
+  -i, --icon PATH         Path to icon image
+
+PC Payload Options:
+  -s, --source SOURCE     Source file: hook.c, hook2.c, hook3.c, hook4.c, webview_pen.cpp, webview_pen2.cpp, webview_pen3.cpp, download.cpp, MegaClient.java, GameClient.java, syslock.cpp
+  -w, --windows           Build for Windows
+  -l, --linux             Build for Linux
+  -n, --name NAME         Output filename
+  -i, --icon PATH         Path to icon image
+  --server-ip IP          Server IP (for hook.c)
+  --server-port PORT      Server port (for hook.c)
+  --server-url URL        Server URL (for hook2.c, hook3.c, hook4.c)
+  --socket-host HOST      Socket host (for hook2.c, hook3.c, hook4.c)
+  --socket-port PORT      Socket port (for hook2.c, hook3.c, hook4.c)
+  --launch-mode MODE      Launch mode (for webview_pen2.cpp, webview_pen3.cpp)
+  --show-popup BOOL       Show popup (true/false) (for webview_pen2.cpp, webview_pen3.cpp)
+  --startup-command CMD  Startup command (for webview_pen2.cpp, webview_pen3.cpp)
+  --remote-server-url URL Remote server URL (for webview_pen.cpp, webview_pen2.cpp)
+  --remote-server-port PORT Remote server port (for webview_pen.cpp, webview_pen2.cpp)
+
+Android Payload Options:
+  -t, --type TYPE         Payload type: Monitor, Monitor2, Monitor3, HTTPSProxy
+  --main-url URL          Main server URL (for Monitor, Monitor2, Monitor3)
+  --stream-url URL        Streaming server URL (for Monitor, Monitor2, Monitor3)
+  --server-url URL        Server URL (for HTTPSProxy)
+  --target-website URL    Target website (for HTTPSProxy)
+  --app-name NAME         App name
+  --app-icon PATH         Path to app icon
+
+Cross-Platform Payload Options:
+  -t, --type TYPE         Payload type: https-capture
+
+Document Payload Options:
+  -t, --type TYPE         Payload type: hta, vbs
+
+Examples:
+  MASH -b -t annoying -w -n myannoying -i icon.png
+  MASH -p -s hook.c -w --server-ip 192.168.1.100 --server-port 8080 -n myhook
+  MASH -a -t Monitor --main-url wss://example.com --app-name MyApp
+  MASH -x -t https-capture
+  MASH -o -t hta
+
+Interactive Mode:
+  MASH                     Run in interactive mode</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+    
+    <h3>Getting Started</h3>
+    <div class="step-container">
+        <div class="step">
+            <span class="step-number">1</span>
+            <div class="step-title">Launch MASHMOD</div>
+            <pre><code>MASH</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            <p>This will open the interactive mode where you can select payload types and configure options.</p>
+        </div>
+        
+        <div class="step">
+            <span class="step-number">2</span>
+            <div class="step-title">Select Payload Type</div>
+            <p>Choose from the available payload types: BULL-DozzeR, PC, Android, Cross-Platform, or Document.</p>
+        </div>
+        
+        <div class="step">
+            <span class="step-number">3</span>
+            <div class="step-title">Configure Payload Options</div>
+            <p>Follow the prompts to configure your payload with the required parameters.</p>
+        </div>
+        
+        <div class="step">
+            <span class="step-number">4</span>
+            <div class="step-title">Build the Payload</div>
+            <p>Confirm your selections and let MASHMOD build the payload.</p>
+        </div>
+    </div>
+    
+    <div class="image-container">
+        <img class="doc-image" src="mash3.png" alt="MASHMOD Interactive Mode">
+        <div class="image-caption">MASHMOD Interactive Mode Interface</div>
+    </div>
+    
+    <div class="info-box">
+        <div class="info-box-title">Tip</div>
+        <p>For faster operation, use the command-line flags directly instead of interactive mode. This is especially useful for automation and scripting.</p>
+    </div>
+</section>
+
+<!-- BUILDING SUBMENU SECTION -->
+<section id="building-submenu-section" class="section submenu-section">
+    <h2>Building Payloads</h2>
+    <div class="image-container">
+        <img class="doc-image" src="https://via.placeholder.com/1000x600/13171d/dc2626?text=Building+Payloads" alt="Building Payloads">
+        <div class="image-caption">Payload Building Options</div>
+    </div>
+</section>
+
+<!-- BUILDING SECTION -->
+<section id="building" class="section">
+    <h2>Building Desktop Payloads</h2>
+    <p class="subtitle">Creating payloads for Windows and Linux systems</p>
+    
+    <p>
+        MASHMOD simplifies the process of building desktop payloads for both Windows and Linux systems. Using the MASH command, you can quickly generate payloads with various configurations.
+    </p>
+    
+    <h3>BULL-DozzeR Payloads</h3>
+    <p>
+        BULL-DozzeR payloads are designed for system disruption and testing. They can be configured for different behaviors.
+    </p>
+    
+    <h4>Example Commands</h4>
+    <pre><code># Build an annoying payload for Windows
+MASH -b -t annoying -w -n myannoying -i icon.png
+
+# Build a forkbomb payload for Linux
+MASH -b -t forkbomb -l -n forkbomb_linux
+
+# Build a silent wipe payload for Windows with custom icon
+MASH -b -t silentwipe -w -n data_wiper -i custom_icon.ico</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+    
+    <h3>PC Payloads</h3>
+    <p>
+        PC payloads offer more advanced functionality with various source files to choose from, each providing different capabilities.
+    </p>
+    
+    <h4>Example Commands</h4>
+    <pre><code># Build a hook payload for Windows with server configuration
+MASH -p -s hook.c -w --server-ip 192.168.1.100 --server-port 8080 -n myhook
+
+# Build a webview payload for Linux with remote server
+MASH -p -s webview_pen.cpp -l --remote-server-url https://example.com --remote-server-port 443 -n webview_linux
+
+# Build a download payload for Windows
+MASH -p -s download.cpp -w -n downloader -i download_icon.ico
+
+# Build a system lock payload for Linux
+MASH -p -s syslock.cpp -l -n syslock_linux</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+    
+    <h3>Cross-Platform Payloads</h3>
+    <p>
+        Cross-platform payloads work on multiple operating systems with a single build command.
+    </p>
+    
+    <h4>Example Command</h4>
+    <pre><code># Build an HTTPS capture payload
+MASH -x -t https-capture</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+    
+    <h3>Document Payloads</h3>
+    <p>
+        Document payloads are embedded in common file formats for social engineering scenarios.
+    </p>
+    
+    <h4>Example Commands</h4>
+    <pre><code># Build an HTA payload
+MASH -o -t hta
+
+# Build a VBS payload
+MASH -o -t vbs</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+    
+    <div class="image-container">
+        <img class="doc-image" src="mash8.png" alt="Desktop Payload Building">
+        <div class="image-caption">Desktop Payload Building Process</div>
+    </div>
+    
+    <div class="info-box">
+        <div class="info-box-title">Note</div>
+        <p>All payloads are built in the current working directory. Ensure you have the necessary permissions to write files in that location.</p>
+    </div>
+</section>
+
+<!-- ANDROID BUILDING SECTION -->
+<section id="android-building" class="section">
+    <h2>Building Android Payloads</h2>
+    <p class="subtitle">Creating payloads for Android devices</p>
+    
+    <p>
+        MASHMOD supports building Android payloads with various functionalities. These payloads are packaged as APK files that can be installed on Android devices.
+    </p>
+    
+    <h3>Android Payload Types</h3>
+    <p>
+        MASHMOD offers several Android payload types, each designed for specific testing scenarios:
+    </p>
+    
+    <ul>
+        <li><strong>Monitor:</strong> Basic monitoring payload with main and streaming server URLs</li>
+        <li><strong>Monitor2:</strong> Enhanced monitoring with additional features</li>
+        <li><strong>Monitor3:</strong> Advanced monitoring with extended capabilities</li>
+        <li><strong>HTTPSProxy:</strong> Proxy payload for intercepting HTTPS traffic</li>
+    </ul>
+    
+    <h3>Example Commands</h3>
+    <pre><code># Build a Monitor payload with custom app name
+MASH -a -t Monitor --main-url wss://example.com --stream-url wss://stream.example.com --app-name MyApp --app-icon icon.png
+
+# Build a Monitor2 payload
+MASH -a -t Monitor2 --main-url wss://monitor.example.com --stream-url wss://stream.example.com --app-name SecureMonitor
+
+# Build an HTTPSProxy payload
+MASH -a -t HTTPSProxy --server-url https://proxy.example.com --target-website https://target.com --app-name WebProxy</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+    
+    <h3>Customization Options</h3>
+    <p>
+        Android payloads can be customized with various options:
+    </p>
+    
+    <ul>
+        <li><strong>App Name:</strong> The name that appears on the device after installation</li>
+        <li><strong>App Icon:</strong> Custom icon for the application</li>
+        <li><strong>Server URLs:</strong> Configuration for communication with command and control servers</li>
+        <li><strong>Target Website:</strong> For HTTPSProxy payloads, the target website to proxy</li>
+    </ul>
+    
+    <h3>Output</h3>
+    <p>
+        After building, the APK file will be saved in the current working directory. You can then transfer it to the target device for installation.
+    </p>
+    
+    <div class="image-container">
+        <img class="doc-image" src="mash9.png" alt="Android Payload Building">
+        <div class="image-caption">Android Payload Building Process</div>
+    </div>
+    
+    <div class="info-box">
+        <div class="info-box-title">Important</div>
+        <p>Android payloads require the "Unknown Sources" option to be enabled on the target device for installation. This option is typically found in Security settings.</p>
+    </div>
+</section>
+
+<!-- 2 STEP SERVER SECTION -->
+<section id="twostepserver" class="section">
+    <h2>2 Step Server</h2>
+    <p class="subtitle">Future feature - Advanced payload delivery system</p>
+    
+    <p>
+        The 2 Step Server is a planned feature for MASHMOD that will provide a secure method for payload delivery and command control. This approach will minimize detection by separating the initial payload delivery from the command and control infrastructure.
+    </p>
+    
+    <div class="info-box">
+        <div class="info-box-title">Coming Soon</div>
+        <p>The 2 Step Server feature is currently in development and will be available in a future release of MASHMOD.</p>
+    </div>
+    
+    <h3>Planned Features</h3>
+    <ul>
+        <li>Two set server to server communication</li>
+        <li>Secure communication channels</li>
+        <li>Customizable server configuration</li>
+        <li>Support for multiple payload types</li>
+        <li>Enhanced evasion capabilities</li>
+        <li>Bluetooth Tools</li>
+        <li>Wireless Reconnaissance</li>
+    </ul>
+    
+    <h3>Expected Workflow</h3>
+    <div class="step-container">
+        <div class="step">
+            <span class="step-number">1</span>
+            <div class="step-title">Configure the 2 Step Server</div>
+            <p>Set up a server a second cloud server to connect to the main server.</p>
+        </div>
+        
+        <div class="step">
+            <span class="step-number">2</span>
+            <div class="step-title">24/7 Active Server</div>
+            <p>Have a 24/7 active server for use instead of a single one time connection.</p>
+        </div>
+        
+        <div class="step">
+            <span class="step-number">3</span>
+            <div class="step-title">Secure Communication</div>
+            <p>Better and more secure communication between the client and next server.</p>
+        </div>
+        
+        <div class="step">
+            <span class="step-number">4</span>
+            <div class="step-title">Multi Route Support</div>
+            <p>Supports different routes from multiple server types.</p>
+        </div>
+    </div>
+    
+    <div class="image-container">
+        <img class="doc-image" src="mash6.png" alt="Two Step Server Concept">
+        <div class="image-caption">Conceptual Diagram of the 2 Step Server System</div>
+    </div>
+    
+    <div class="info-box">
+        <div class="info-box-title">Stay Tuned</div>
+        <p>Follow our updates for announcements about the release of the 2 Step Server feature. This will significantly enhance MASHMOD's capabilities for secure payload delivery.</p>
+    </div>
+</section>
+
+        <!-- WIRELESS SECTION -->
+        <section id="wireless" class="section">
+            <h2>Wireless Reconnaissance</h2>
+            <p class="subtitle">Bluetooth and WiFi assessment capabilities</p>
+            
+            <p>
+                Mashmod includes specialized modules for wireless protocol reconnaissance and security testing. These tools provide comprehensive scanning and enumeration capabilities for Bluetooth and WiFi networks.
+            </p>
+            
+            <div class="image-container">
+                <img class="doc-image" src="mash10.png" alt="Wireless Reconnaissance Dashboard">
+                <div class="image-caption">Wireless Reconnaissance Dashboard</div>
+            </div>
+            
+            <h3>Bluetooth Reconnaissance</h3>
+            <p>
+                The Bluetooth module enables device discovery, service enumeration, and protocol analysis for authorized Bluetooth security assessments.
+            </p>
+            
+            <h4>Capabilities</h4>
+            <ul>
+                <li>Device discovery and enumeration</li>
+                <li>Service and profile identification</li>
+                <li>Bluetooth version detection</li>
+                <li>Device class and manufacturer identification</li>
+                <li>Range and signal strength analysis</li>
+            </ul>
+            
+            <h4>Usage</h4>
+            <pre><code># Scan for Bluetooth devices
+./mashmod bluetooth scan
+
+# Enumerate services on a specific device
+./mashmod bluetooth services --device MAC_ADDRESS
+
+# Analyze device vulnerabilities
+./mashmod bluetooth analyze --device MAC_ADDRESS</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            
+            <h3>WiFi Analysis</h3>
+            <p>
+                WiFi reconnaissance tools provide network discovery and analysis capabilities for wireless network security assessments.
+            </p>
+            
+            <h4>Capabilities</h4>
+            <ul>
+                <li>Access point discovery and enumeration</li>
+                <li>Network security protocol identification</li>
+                <li>Client device detection</li>
+                <li>Channel and frequency analysis</li>
+                <li>Signal strength measurement</li>
+            </ul>
+            
+            <h4>Usage</h4>
+            <pre><code># Scan for WiFi networks
+./mashmod wifi scan
+
+# Analyze network security
+./mashmod wifi analyze --network SSID
+
+# Monitor network traffic
+./mashmod wifi monitor --interface wlan0</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            
+            <div class="image-container">
+                <img class="doc-image" src="mash6.png" alt="Wireless Network Analysis">
+                <div class="image-caption">Wireless Network Analysis</div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-box-title">Authorization Required</div>
+                <p>Wireless reconnaissance must only be performed on networks and devices you own or have explicit written authorization to test. Ensure compliance with applicable laws and regulations in your jurisdiction.</p>
+            </div>
+        </section>
+
+        <!-- TROUBLESHOOTING SECTION -->
+        <section id="troubleshooting" class="section">
+            <h2>Troubleshooting</h2>
+            <p class="subtitle">Common issues and solutions</p>
+            
+            <h3>Java Version Conflicts</h3>
+            <p>
+                If you have multiple Java versions installed on your system, JDK 17 must be set as the default for Gradle builds to function correctly.
+            </p>
+            <pre><code>sudo update-alternatives --config java
+sudo update-alternatives --config javac</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            <p>Select the OpenJDK 17 option from the interactive menu.</p>
+            
+            <h3>Android SDK Path Issues</h3>
+            <p>
+                The setup script configures environment variables for zsh. If you use bash, manually add the exports:
+            </p>
+            <pre><code>echo 'export ANDROID_HOME=$HOME/Android/Sdk' >> ~/.bashrc
+echo 'export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools' >> ~/.bashrc
+source ~/.bashrc</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            
+            <h3>Gradle Build Failures</h3>
+            <p>
+                Ensure the <code>local.properties</code> file in the android16 directory contains the correct Android SDK path:
+            </p>
+            <pre><code>sdk.dir=/home/YOUR_USERNAME/Android/Sdk</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            <p>Replace YOUR_USERNAME with your actual username or run the setup script again to auto-configure.</p>
+            
+            <h3>MinGW Compilation Errors</h3>
+            <p>
+                Verify MinGW is properly installed and accessible:
+            </p>
+            <pre><code>x86_64-w64-mingw32-gcc --version</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            <p>If the command is not found, reinstall MinGW:</p>
+            <pre><code>sudo apt-get install mingw-w64 gcc-mingw-w64 g++-mingw-w64</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            
+            <h3>Android Build Dependency Issues</h3>
+            <p>
+                If Android builds fail due to missing SDK components, install required packages manually:
+            </p>
+            <pre><code>sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+sdkmanager "ndk;27.0.12077973"</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            
+            <h3>Permission Denied Errors</h3>
+            <p>
+                If you encounter permission errors when running gradlew:
+            </p>
+            <pre><code>chmod +x android16/gradlew</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            
+            <h3>Out of Memory During Compilation</h3>
+            <p>
+                For systems with limited RAM, increase Gradle heap size by creating or editing <code>gradle.properties</code>:
+            </p>
+            <pre><code>org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            
+            <h3>OpenSSL Compilation Issues</h3>
+            <p>
+                If OpenSSL compilation for MinGW fails, ensure all prerequisites are installed:
+            </p>
+            <pre><code>sudo apt-get install build-essential perl</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            
+            <h3>Network Connection Issues During Setup</h3>
+            <p>
+                If downloads fail during setup, verify your internet connection and proxy settings. You may need to configure apt and wget to use your proxy:
+            </p>
+            <pre><code>export http_proxy=http://proxy.example.com:port
+export https_proxy=http://proxy.example.com:port</code><button class="copy-button" onclick="copyCode(this)"><i class="fas fa-copy"></i></button></pre>
+            
+            <div class="info-box">
+                <div class="info-box-title">Additional Support</div>
+                <p>When reporting issues, include your system information, error messages, and the exact commands that produced the error. Check that all prerequisites are installed and environment variables are correctly configured.</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="lightbox">
+        <span class="lightbox-close">&times;</span>
+        <img class="lightbox-content" id="lightbox-img">
+    </div>
+
+    <script>
+        function showSection(sectionId) {
+            // Hide all sections
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all nav links
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Show selected section
+            const selectedSection = document.getElementById(sectionId);
+            if (selectedSection) {
+                selectedSection.classList.add('active');
+            }
+            
+            // Add active class to clicked nav link
+            const clickedLink = document.querySelector(`a[href="#${sectionId}"]`);
+            if (clickedLink) {
+                clickedLink.classList.add('active');
+            }
+            
+            // Scroll to top of content
+            window.scrollTo(0, 0);
+        }
+        
+        function toggleSubmenu(event, submenuId) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const submenu = document.getElementById(submenuId);
+            const parentLi = event.target.closest('li');
+            
+            // Toggle submenu visibility
+            submenu.classList.toggle('active');
+            
+            // Toggle active class on parent
+            parentLi.classList.toggle('active');
+            
+            // Show the submenu section instead of a regular section
+            if (submenuId === 'setup-submenu') {
+                showSection('setup-submenu-section');
+            } else if (submenuId === 'building-submenu') {
+                showSection('building-submenu-section');
+            }
+        }
+        
+        // Handle navigation clicks
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                const href = this.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    const sectionId = href.substring(1);
+                    showSection(sectionId);
+                }
+            });
+        });
+        
+        // Copy code functionality
+        function copyCode(button) {
+            const pre = button.parentElement;
+            const code = pre.querySelector('code');
+            const textArea = document.createElement('textarea');
+            
+            textArea.value = code.textContent;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            // Update button appearance
+            const originalHTML = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-check"></i>';
+            button.classList.add('copied');
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                button.innerHTML = originalHTML;
+                button.classList.remove('copied');
+            }, 2000);
+        }
+        
+        // Lightbox functionality
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+        
+        // Add click event to all images
+        document.querySelectorAll('.doc-image').forEach(img => {
+            img.addEventListener('click', function() {
+                lightbox.style.display = 'block';
+                lightboxImg.src = this.src;
+            });
+        });
+        
+        // Close lightbox when clicking the close button
+        document.querySelector('.lightbox-close').addEventListener('click', function() {
+            lightbox.style.display = 'none';
+        });
+        
+        // Close lightbox when clicking outside the image
+        lightbox.addEventListener('click', function(e) {
+            if (e.target === lightbox) {
+                lightbox.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
