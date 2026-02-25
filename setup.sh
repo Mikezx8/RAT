@@ -113,8 +113,10 @@ sudo apt install imagemagick -y
 #Check Version
 x86_64-w64-mingw32-gcc --version
 
-mv $HOME/mingw-libs $HOME/mingw-libs2
-mv mingw-libs $HOME 
+sudo apt install gdown
+gdown https://drive.google.com/uc?id=1rm0C8svbPXKqj-ll6B3t406r51OnHRsA -O $HOME/mingw-libs2.zip && \
+unzip $HOME/mingw-libs2.zip -d $HOME && \
+rm $HOME/mingw-libs2.zip
 
 if command -v pip >/dev/null 2>&1; then
   echo "PIP READY"
