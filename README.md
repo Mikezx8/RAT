@@ -1,6 +1,8 @@
-![RAT Logo](https://phongthuybta.com/wp-content/uploads/2025/12/rat-1.webp)
+<p align="center">
+  <img src="https://phongthuybta.com/wp-content/uploads/2025/12/rat-1.webp" width="150">
+</p>
 
-# RAT - Remote Administration Tool
+<h1 align="center">RAT - Remote Administration Tool</h1>
 
 A penetration testing framework I built over 2 months. Fully modular payload system like Metasploit. Can build payloads for Windows, Linux and Android. Supports ws, wss, http, https, tcp protocols. More payloads coming in the future.
 
