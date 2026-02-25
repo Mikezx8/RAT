@@ -1,7 +1,3 @@
-Here's the README:
-
----
-
 ![RAT Logo](https://phongthuybta.com/wp-content/uploads/2025/12/rat-1.webp)
 
 # RAT - Remote Administration Tool
